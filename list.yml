@@ -1,0 +1,20 @@
+name: gravB_env
+channels:
+  - https://conda.anaconda.org/bccp
+  - bccp
+  - defaults
+  - https://repo.anaconda.com/pkgs/main
+  - https://repo.anaconda.com/pkgs/r
+dependencies:
+  - yt
+  - numpy
+  - pandas
+  - ipykernel
+  - h5py
+  - astropy
+  - netcdf4
+  - requests
+  - xarray
+  - libgfortran=5
+  - numba
+prefix: /opt/anaconda3/envs/gravB_env
