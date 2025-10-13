@@ -3,9 +3,11 @@ from pathlib import Path
 from scipy.integrate import quad, simpson, trapezoid, cumulative_trapezoid, cumulative_simpson
 from scipy.interpolate import interp1d
 from astropy import constants as const
+from astropy import units
+
 
 c_kms = const.c.to('km/s').value  # speed of light in km/s
-
+Mpc_2_m = units.Mpc.to(units.m)
 # ==================================================
 # Read parameters used in the simulation from a file.
 # ==================================================
@@ -68,7 +70,7 @@ def build_cosmo_params_from_file(path, extra_defaults=None):
         "m_ele": 9.11E-31, # kg
         "m_H": 1.67E-27,  # kg
         "m_He": 6.65E-27, # kg (approx)
-        "SigmaT": 6.65E-29, # m^2
+        "SigmaT": const.sigma_T.value, # m^2
         "Ombh2": Omega_b * h**2,
         "xe": 1.0,
         "Yp": 0.25,
@@ -172,39 +174,18 @@ def tau_optical_depth(z, pars=parameters_sim):
     [tau] = dimensionless
     Integration in terms of dz=H*dr
     """
-    tau_optical_depth_int = lambda x: pars['SigmaT']*pars['c']*n_ele(x, pars)/(1+x)/(Hubble(x, pars)) *3.086E22 #(Mpc/m factor)
-    return quad(tau_optical_depth_int, 0, z)[0]  # [0]= output value
+    tau_optical_depth_int = lambda x: pars['SigmaT']*pars['c']*Mpc_2_m*n_ele(x, pars)*(1+x)**2/Hubble(x, pars)
+    return quad(tau_optical_depth_int, 0, z)[0]
 
 tau_optical_depth = np.vectorize(tau_optical_depth)
 
-
-def kernel_kappaB(z, z_s, pars=parameters_sim):
-    """ Lensing convergence kernel for sources at z_s. """
-    chi = chi_of_z(z)
-    chi_s = chi_of_z(z_s)
-    prefactor = 1.5 * pars['H0']**2 * pars['Omega_m'] / (pars['c']**2)
-    output = prefactor * (1+z) * chi * (chi_s - chi) / chi_s
-    return output * (z < z_s)  # enforce chi < chi_s
-
-
-def kernel_ksz(z, z_s=None, pars=parameters_sim):
-    """ kSZ kernel (independent of z_s). """
-    output = pars['SigmaT'] * 3.086e22 / pars['h'] * \
-                n_ele(z)/(1+z) * np.exp(-tau_optical_depth(z, pars))
-    return output
-
-
-def kernel_kappaPhi(z, z_s, pars=parameters_sim):
-    """ Phi-kappa cross kernel, proportional to kappaB. """
-    return 0.5 * pars['c'] * kernel_kappaB(z, z_s)
 
 # =====================
 # Angular power spectra
 # =====================
 
 
-
-def C_ell_lensing(z_s, ell, kmin, kmax, Pk, z_min=1e-5, Pk_evol=False, pars=parameters_sim, N_int=int(1e4), integr_method='simpson'):
+def C_ell_PhiPhi(z_s, ell, kmin, kmax, Pk, z_min=1e-5, Pk_evol=False, pars=parameters_sim, N_int=int(1e4), integr_method='simpson'):
     """
     """
     z_grid = np.geomspace(z_min, z_s, N_int)
@@ -216,7 +197,7 @@ def C_ell_lensing(z_s, ell, kmin, kmax, Pk, z_min=1e-5, Pk_evol=False, pars=para
     chi = chi_grid[mask]
     if z.size == 0:
         import warnings
-        warnings.warn(f"C_ell_lensing: No valid z found for ell={ell}. Returning 0.")
+        warnings.warn(f"C_ell_PhiPhi: No valid z found for ell={ell}. Returning 0.")
         return 0.0
     if Pk_evol:
         C_ell_int = Pk((ell/chi , z))
@@ -254,10 +235,55 @@ def C_ell_lensing(z_s, ell, kmin, kmax, Pk, z_min=1e-5, Pk_evol=False, pars=para
 
 
 def C_ell_BB(z_s, ell, kmin, kmax, Pk, z_min=1e-5, Pk_evol=False, pars=parameters_sim, N_int=int(1e4), integr_method='simpson'):
-    return 4 * C_ell_lensing(z_s, ell, kmin, kmax, Pk, z_min, Pk_evol, pars, N_int, integr_method)/(pars['c']**2)
+    return (4/pars['c']**2) * C_ell_PhiPhi(z_s, ell, kmin, kmax, Pk, z_min, Pk_evol, pars, N_int, integr_method)
 
 
 def C_ell_kSZ(z_s, ell, kmin, kmax, Pk, z_min=1e-5, Pk_evol=False, pars=parameters_sim, N_int=int(1e4), integr_method='simpson'):
+    """
+    """
+    z_grid = np.geomspace(z_min, z_s, N_int)
+    chi_grid = chi_of_z(z_grid)
+    # restrict to valid chi by k-range
+    mask = (ell/chi_grid < kmax) & (ell/chi_grid > kmin)
+    z = z_grid[mask]
+    chi = chi_grid[mask]
+    if z.size == 0:
+        import warnings
+        warnings.warn(f"C_ell_lensing: No valid z found for ell={ell}. Returning 0.")
+        return 0.0
+
+    C_ell_int = Pk((ell/chi, z)) if Pk_evol else Pk(ell/chi)
+
+    C_ell_int *= (pars['SigmaT']*Mpc_2_m*n_ele(z)/pars['c']*(1+z)**2*np.exp(-tau_optical_depth(z)))**2
+    C_ell_int /= Hubble(z, pars)*(chi**2)
+
+    # integrate in z
+    if integr_method == 'simpson':
+        C_ell = simpson(C_ell_int, x=z)
+    elif integr_method == 'cumsum':
+        dz = np.diff(z)
+        dz = np.append(dz, dz[-1])  # pad last element for same length
+        C_ell = np.sum(C_ell_int * dz)
+    elif integr_method == 'quad':
+        def integrand(x):
+            chi_x = chi_of_z(x)
+            val = Pk((ell/chi_x, x)) if Pk_evol else Pk(ell/chi_x)
+            val *= (pars['SigmaT']*Mpc_2_m*n_ele(x)/pars['c']*(1+x)**2*np.exp(-tau_optical_depth(x)))**2
+            val /= Hubble(x, pars)*(chi_x**2)
+            return val
+        C_ell = quad(integrand, z[0], z[-1], limit=400)[0]
+    elif integr_method == 'trapezoid':
+        C_ell = trapezoid(C_ell_int, x=z)
+    elif integr_method == 'cum_simpson':
+        C_ell = cumulative_simpson(C_ell_int, x=z)[-1]
+    elif integr_method == 'cum_trapezoid':
+        C_ell = cumulative_trapezoid(C_ell_int, x=z)[-1]
+    else: 
+        raise('Invalid selection of integration method, please choose between quad, simpson, cumsum or trapz')
+    return C_ell * pars['c']
+
+
+def C_ell_B_X_kSZ(z_s, ell, kmin, kmax, Pk, z_min=1e-5, Pk_evol=False, pars=parameters_sim, N_int=int(1e4), integr_method='simpson'):
     """
     """
     z_grid = np.geomspace(z_min, z_s, N_int)
@@ -271,13 +297,11 @@ def C_ell_kSZ(z_s, ell, kmin, kmax, Pk, z_min=1e-5, Pk_evol=False, pars=paramete
         import warnings
         warnings.warn(f"C_ell_lensing: No valid z found for ell={ell}. Returning 0.")
         return 0.0
-    if Pk_evol:
-        C_ell_int = Pk((ell/chi , z))
-    else:
-        C_ell_int = Pk(ell/chi)
 
-    C_ell_int *= (pars['SigmaT']*3.086E22/pars['h']*n_ele(z)/(1+z)*np.exp(-tau_optical_depth(z)))**2
-    C_ell_int /= Hubble(z, pars)*(chi**2)
+    C_ell_int = Pk((ell/chi, z)) if Pk_evol else Pk(ell/chi)
+    C_ell_int *= 1.5*(pars['H0']/pars['c'])**2 * pars['Omega_m']*pars['SigmaT']*Mpc_2_m
+    C_ell_int *= n_ele(z)*(1+z)**3 * np.exp(-tau_optical_depth(z)) * (chi_s - chi)/(chi_s*chi)
+    C_ell_int /= Hubble(z, pars)
 
     # integrate in z
     if integr_method == 'simpson':
@@ -289,10 +313,10 @@ def C_ell_kSZ(z_s, ell, kmin, kmax, Pk, z_min=1e-5, Pk_evol=False, pars=paramete
     elif integr_method == 'quad':
         def integrand(x):
             chi_x = chi_of_z(x)
-            chi_s = chi_of_z(z_s)
             val = Pk((ell/chi_x, x)) if Pk_evol else Pk(ell/chi_x)
-            val *= (chi_x/chi_s-1)**2
-            val *= (1 + x)**2 / Hubble(x, pars)
+            val *= 1.5*(pars['H0']/pars['c'])**2 * pars['Omega_m']*pars['SigmaT']*Mpc_2_m
+            val *= n_ele(x)*(1+x)**3 * np.exp(-tau_optical_depth(x)) * (chi_s - chi_x)/(chi_s*chi_x)
+            val /= Hubble(x, pars)
             return val
         C_ell = quad(integrand, z[0], z[-1], limit=400)[0]
     elif integr_method == 'trapezoid':
@@ -304,3 +328,16 @@ def C_ell_kSZ(z_s, ell, kmin, kmax, Pk, z_min=1e-5, Pk_evol=False, pars=paramete
     else: 
         raise('Invalid selection of integration method, please choose between quad, simpson, cumsum or trapz')
     return C_ell * pars['c']
+
+
+def C_ell_XY(z_s, ell, kmin, kmax, Pk, type_XY, z_min=1e-5, Pk_evol=False, pars=parameters_sim, N_int=int(1e4), integr_method='simpson'):
+    if type_XY == 'PhiPhi':
+        return C_ell_PhiPhi(z_s, ell, kmin, kmax, Pk, z_min, Pk_evol, pars, N_int, integr_method)
+    elif type_XY == 'BB':
+        return C_ell_BB(z_s, ell, kmin, kmax, Pk, z_min, Pk_evol, pars, N_int, integr_method)
+    elif type_XY == 'kSZ':
+        return C_ell_kSZ(z_s, ell, kmin, kmax, Pk, z_min, Pk_evol, pars, N_int, integr_method)
+    elif type_XY == 'B_X_kSZ':
+        return C_ell_B_X_kSZ(z_s, ell, kmin, kmax, Pk, z_min, Pk_evol, pars, N_int, integr_method)
+    else:
+        raise ValueError(f"Unknown type_XY: {type_XY}. Choose from 'PhiPhi', 'BB', 'kSZ', 'B_X_kSZ'.")
