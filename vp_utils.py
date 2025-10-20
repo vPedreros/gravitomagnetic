@@ -185,7 +185,7 @@ tau_optical_depth = np.vectorize(tau_optical_depth)
 # =====================
 
 
-def C_ell_PhiPhi(z_s, ell, kmin, kmax, Pk, z_min=1e-5, Pk_evol=False, pars=parameters_sim, N_int=int(1e4), integr_method='simpson'):
+def C_ell_Phi(z_s, ell, kmin, kmax, Pk, z_min=1e-5, Pk_evol=False, pars=parameters_sim, N_int=int(1e4), integr_method='simpson'):
     """
     """
     z_grid = np.geomspace(z_min, z_s, N_int)
@@ -234,8 +234,8 @@ def C_ell_PhiPhi(z_s, ell, kmin, kmax, Pk, z_min=1e-5, Pk_evol=False, pars=param
     return C_ell * 9/4 * pars['H0']**4 * pars['Omega_m']**2 / pars['c']**3
 
 
-def C_ell_BB(z_s, ell, kmin, kmax, Pk, z_min=1e-5, Pk_evol=False, pars=parameters_sim, N_int=int(1e4), integr_method='simpson'):
-    return (4/pars['c']**2) * C_ell_PhiPhi(z_s, ell, kmin, kmax, Pk, z_min, Pk_evol, pars, N_int, integr_method)
+def C_ell_B(z_s, ell, kmin, kmax, Pk, z_min=1e-5, Pk_evol=False, pars=parameters_sim, N_int=int(1e4), integr_method='simpson'):
+    return (4/pars['c']**2) * C_ell_Phi(z_s, ell, kmin, kmax, Pk, z_min, Pk_evol, pars, N_int, integr_method)
 
 
 def C_ell_kSZ(z_s, ell, kmin, kmax, Pk, z_min=1e-5, Pk_evol=False, pars=parameters_sim, N_int=int(1e4), integr_method='simpson'):
@@ -253,9 +253,9 @@ def C_ell_kSZ(z_s, ell, kmin, kmax, Pk, z_min=1e-5, Pk_evol=False, pars=paramete
         return 0.0
 
     C_ell_int = Pk((ell/chi, z)) if Pk_evol else Pk(ell/chi)
-
-    C_ell_int *= (pars['SigmaT']*Mpc_2_m*n_ele(z)/pars['c']*(1+z)**2*np.exp(-tau_optical_depth(z)))**2
-    C_ell_int /= Hubble(z, pars)*(chi**2)
+    C_ell_int *= (pars['SigmaT']*Mpc_2_m*n_ele(z)*(1+z)**2*np.exp(-tau_optical_depth(z)))**2/pars['c']
+    C_ell_int /= Hubble(z, pars)
+    C_ell_int /= chi**2
 
     # integrate in z
     if integr_method == 'simpson':
@@ -268,8 +268,9 @@ def C_ell_kSZ(z_s, ell, kmin, kmax, Pk, z_min=1e-5, Pk_evol=False, pars=paramete
         def integrand(x):
             chi_x = chi_of_z(x)
             val = Pk((ell/chi_x, x)) if Pk_evol else Pk(ell/chi_x)
-            val *= (pars['SigmaT']*Mpc_2_m*n_ele(x)/pars['c']*(1+x)**2*np.exp(-tau_optical_depth(x)))**2
-            val /= Hubble(x, pars)*(chi_x**2)
+            val *= (pars['SigmaT']*Mpc_2_m*n_ele(x)*(1+x)**2*np.exp(-2*tau_optical_depth(x)))**2/pars['c']
+            val /= Hubble(x, pars)
+            val /= chi_x**2
             return val
         C_ell = quad(integrand, z[0], z[-1], limit=400)[0]
     elif integr_method == 'trapezoid':
@@ -280,7 +281,7 @@ def C_ell_kSZ(z_s, ell, kmin, kmax, Pk, z_min=1e-5, Pk_evol=False, pars=paramete
         C_ell = cumulative_trapezoid(C_ell_int, x=z)[-1]
     else: 
         raise('Invalid selection of integration method, please choose between quad, simpson, cumsum or trapz')
-    return C_ell * pars['c']
+    return C_ell
 
 
 def C_ell_B_X_kSZ(z_s, ell, kmin, kmax, Pk, z_min=1e-5, Pk_evol=False, pars=parameters_sim, N_int=int(1e4), integr_method='simpson'):
@@ -299,7 +300,7 @@ def C_ell_B_X_kSZ(z_s, ell, kmin, kmax, Pk, z_min=1e-5, Pk_evol=False, pars=para
         return 0.0
 
     C_ell_int = Pk((ell/chi, z)) if Pk_evol else Pk(ell/chi)
-    C_ell_int *= 1.5*(pars['H0']/pars['c'])**2 * pars['Omega_m']*pars['SigmaT']*Mpc_2_m
+    C_ell_int *= 3*(pars['H0']**2/pars['c']**3) * pars['Omega_m']*pars['SigmaT']*Mpc_2_m
     C_ell_int *= n_ele(z)*(1+z)**3 * np.exp(-tau_optical_depth(z)) * (chi_s - chi)/(chi_s*chi)
     C_ell_int /= Hubble(z, pars)
 
@@ -314,7 +315,7 @@ def C_ell_B_X_kSZ(z_s, ell, kmin, kmax, Pk, z_min=1e-5, Pk_evol=False, pars=para
         def integrand(x):
             chi_x = chi_of_z(x)
             val = Pk((ell/chi_x, x)) if Pk_evol else Pk(ell/chi_x)
-            val *= 1.5*(pars['H0']/pars['c'])**2 * pars['Omega_m']*pars['SigmaT']*Mpc_2_m
+            val *= 3*(pars['H0']**2/pars['c']**3) * pars['Omega_m']*pars['SigmaT']*Mpc_2_m
             val *= n_ele(x)*(1+x)**3 * np.exp(-tau_optical_depth(x)) * (chi_s - chi_x)/(chi_s*chi_x)
             val /= Hubble(x, pars)
             return val
@@ -327,14 +328,14 @@ def C_ell_B_X_kSZ(z_s, ell, kmin, kmax, Pk, z_min=1e-5, Pk_evol=False, pars=para
         C_ell = cumulative_trapezoid(C_ell_int, x=z)[-1]
     else: 
         raise('Invalid selection of integration method, please choose between quad, simpson, cumsum or trapz')
-    return C_ell * pars['c']
+    return C_ell
 
 
 def C_ell_XY(z_s, ell, kmin, kmax, Pk, type_XY, z_min=1e-5, Pk_evol=False, pars=parameters_sim, N_int=int(1e4), integr_method='simpson'):
-    if type_XY == 'PhiPhi':
-        return C_ell_PhiPhi(z_s, ell, kmin, kmax, Pk, z_min, Pk_evol, pars, N_int, integr_method)
-    elif type_XY == 'BB':
-        return C_ell_BB(z_s, ell, kmin, kmax, Pk, z_min, Pk_evol, pars, N_int, integr_method)
+    if type_XY == 'Phi':
+        return C_ell_Phi(z_s, ell, kmin, kmax, Pk, z_min, Pk_evol, pars, N_int, integr_method)
+    elif type_XY == 'B':
+        return C_ell_B(z_s, ell, kmin, kmax, Pk, z_min, Pk_evol, pars, N_int, integr_method)
     elif type_XY == 'kSZ':
         return C_ell_kSZ(z_s, ell, kmin, kmax, Pk, z_min, Pk_evol, pars, N_int, integr_method)
     elif type_XY == 'B_X_kSZ':
