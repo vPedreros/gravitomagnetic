@@ -106,6 +106,11 @@ def build_cosmo_params_from_file(path, extra_defaults=None):
 parameters_sim = build_cosmo_params_from_file("parameters-usedvalues")
 
 parameters_sim['w_de'] = -1
+parameters_sim['khN'] = 1024/500*np.pi
+parameters_sim['kN'] = parameters_sim['khN']*parameters_sim['h']
+
+parameters_sim['khF'] = 1/500
+parameters_sim['kF'] = parameters_sim['khF']*parameters_sim['h']
 
 ######################
 # Background functions
