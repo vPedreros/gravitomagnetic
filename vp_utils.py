@@ -116,6 +116,11 @@ parameters_sim['kF'] = parameters_sim['khF']*parameters_sim['h']
 # Background functions
 ######################
 
+def remove_h(kh, Pkh, h=parameters_sim['h']):
+    """Cristian approved"""
+    k = kh * h
+    Pk = Pkh / h**3
+    return k, Pk
 
 def a_of_z(z):
     """
