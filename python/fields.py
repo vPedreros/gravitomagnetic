@@ -14,6 +14,7 @@ from pathlib import Path
 from pylab import *
 import MAS_library as MASL
 import Pk_library as PKL
+import gc
 
 import vp_utils as utils
 
@@ -27,7 +28,7 @@ def parse_args():
     parser.add_argument("--mas", default="CIC", help="Mass assignment scheme.")
     parser.add_argument("--threads", type=int, default=1, help="Number of threads for Pk computation.")
     parser.add_argument("--out-dir", default="outputs", help="Output directory for .npy files.")
-    parser.add_argument("--verbose", action="store_true", help="Enable verbose Pylians output.")
+    parser.add_argument("--verbose", type=bool, help="Enable verbose Pylians output.")
     return parser.parse_args()
 
 
@@ -54,35 +55,52 @@ def main():
     box_size = meta.get("box_size")
 
     print("Loading coordinates...")
-    pos = np.load(coords_path).astype(np.float32, copy=False)
+    pos = np.load(coords_path).astype(np.float32)
     vel = np.load(vel_path).astype(np.float32, copy=False)
     
     out = Path(args.out_dir)
     out.mkdir(parents=True, exist_ok=True)
 
     rho = np.zeros((args.ngrid, args.ngrid, args.ngrid), dtype=np.float32)
+
     MASL.MA(pos, rho, box_size, args.mas, verbose=args.verbose)
 
-    delta = rho / np.mean(rho, dtype=np.float32) - 1.0
-    delta = delta.astype(np.float32, copy=False)
+    rho_mean = np.mean(rho, dtype=np.float32)
+    delta = rho / rho_mean
+    delta -= 1.0
+
     np.save(out / "delta.npy", delta)
 
-    rho_momentum = np.zeros((args.ngrid, args.ngrid, args.ngrid), dtype=np.float32)
-    qx = np.zeros_like(rho_momentum)
-    qy = np.zeros_like(rho_momentum)
-    qz = np.zeros_like(rho_momentum)
+    del delta, rho
+    gc.collect()
 
-    MASL.MA(pos, qx, box_size, args.mas, vel[:,0].astype(np.float32), args.verbose)
-    qx /= np.mean(rho_momentum)
+    qx = np.zeros((args.ngrid, args.ngrid, args.ngrid), dtype=np.float32)
+    qy = np.zeros((args.ngrid, args.ngrid, args.ngrid), dtype=np.float32)
+    qz = np.zeros((args.ngrid, args.ngrid, args.ngrid), dtype=np.float32)
+
+    MASL.MA(pos, qx, box_size, args.mas, vel[:,0].astype(np.float32), verbose=args.verbose)
+    qx /= np.mean(rho_mean)
+
     np.save(out / "momentum_x.npy", qx)
 
-    MASL.MA(pos, qy, box_size, args.mas, vel[:,1].astype(np.float32), args.verbose)
-    qy /= np.mean(rho_momentum)
+    del qx
+    gc.collect()
+
+    MASL.MA(pos, qy, box_size, args.mas, vel[:,1].astype(np.float32), verbose=args.verbose)
+    qy /= np.mean(rho_mean)
+
     np.save(out / "momentum_y.npy", qy)
 
-    MASL.MA(pos, qz, box_size, args.mas, vel[:,2].astype(np.float32), args.verbose)
-    qz /= np.mean(rho_momentum)
+    del qy
+    gc.collect()
+
+    MASL.MA(pos, qz, box_size, args.mas, vel[:,2].astype(np.float32), verbose=args.verbose)
+    qz /= np.mean(rho_mean)
+
     np.save(out / "momentum_z.npy", qz)
+
+    del qz
+    gc.collect()
 
     print(f"Fields saved to: {out}")
 
