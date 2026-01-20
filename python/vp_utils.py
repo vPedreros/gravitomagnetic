@@ -103,7 +103,7 @@ def build_cosmo_params_from_file(path, extra_defaults=None):
 
     return params
 
-parameters_sim = build_cosmo_params_from_file("parameters-usedvalues")
+parameters_sim = build_cosmo_params_from_file("/home/vpedre/nerding/gravitomagnetic/snapdir_000/parameters-usedvalues")
 
 parameters_sim['w_de'] = -1
 parameters_sim['khN'] = 1024/500*np.pi
