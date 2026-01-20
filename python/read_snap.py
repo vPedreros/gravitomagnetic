@@ -10,6 +10,17 @@ import numpy as np
 from pathlib import Path
 
 
+def parse_args():
+    parser = argparse.ArgumentParser(
+        description="Read snapshot particles and save Coordinates/Velocities arrays."
+    )
+    parser.add_argument("--base-path", required=True, help="Path containing snapdir_### or the snapdir itself.")
+    parser.add_argument("--snap-num", type=int, required=True, help="Snapshot number (e.g. 0).")
+    parser.add_argument("--part-type", default="PartType1", help="Particle group to read.")
+    parser.add_argument("--out-dir", default="outputs", help="Output directory for .npy files.")
+    return parser.parse_args()
+
+
 def find_path(base_path, snap_num):
     """
     Function to find the snapshot directory.
@@ -30,71 +41,40 @@ def _json_ready(value):
     return value
 
 
-def list_snapshot_files(snapdir, snap_num, num_files=None):
+def read_snap(base_path, snap_num, part_type="PartType1", N=8):
     """
-    Function to list snapshot files inside a directory
-    """
-
-    snapdir = Path(snapdir)
-    if num_files is not None:
-        files = [snapdir / f"snap_{snap_num:03d}.{i}.hdf5" for i in range(num_files)]
-    else:
-        files = sorted(snapdir.glob(f"snap_{snap_num:03d}.*.hdf5"))
-    if not files:
-        raise FileNotFoundError(f"No snapshot files in {snapdir}, for snapshot {snap_num:03d}")
-    missing = [m for m in files if not m.exists()]
-    if missing:
-        raise FileNotFoundError(f"Missing snapshot files: {missing}")
-    return files
-
-
-
-def read_snap(base_path, snap_num, part_type="PartType1"):
-    """
-    Function that reads the snapshot files and returns the positions and velocities of the particles.
+    Function that reads the snapshot files and returns the
+    positions and velocities of the particles.
+    N is the number of divisions for a snapshot
     """
     snapdir = find_path(base_path, snap_num)
 
-    header_path = snapdir / f"snap_{snap_num:03d}.0.hdf5"
-
-    if not header_path.exists():
-        raise FileNotFoundError(f"Header not found: {header_path}")
+    print('Reading snapshot from %s'%snapdir)
     
-    with h5py.File(header_path, "r") as f0:
-        header = dict(f0["Header"].attrs)
-        num_files = int(header.get("NumFilesPerSnapshot", 0)) or None
-        box_size = header.get("BoxSize", 0.)
-        redshift = header.get("Redshift", None)
+    nparts = 0
+    for i in range(8):
+        with h5py.File(snapdir.name +"/snap_%03d.%i.hdf5"%(snap_num,i), "r") as f:
+            nparts += f['PartType1']['Coordinates'].shape[0]
+            box_size = f['Header'].attrs['BoxSize']
+            redshift = f['Header'].attrs['Redshift']
 
-    files = list_snapshot_files(snapdir, snap_num, num_files=num_files)
+    print("Found DM particles:", nparts)
 
-    total_part = 0
-    for fp in files:
-        with h5py.File(fp, "r") as f:
-            if part_type not in f:
-                raise KeyError(f"{part_type} not found in {fp}")
-            total_part += f[part_type]["Coordinates"].shape[0]
+    # Allocate big arrays up front
+    pos = np.empty((nparts, 3), dtype=np.float32)
+    vel = np.empty((nparts, 3), dtype=np.float32)
 
-    pos = np.empty((total_part, 3), dtype=np.float32)
-    vel = np.empty((total_part, 3), dtype=np.float32)
-
+    # Second pass: fill them
     offset = 0
-    for fp in files:
-        with h5py.File(fp, "r") as f:
-            group = f[part_type]
-            n = group["Coordinates"].shape[0]
-            if "Coordinates" in group:
-                coords = group["Coordinates"][:]
-            elif "IntegerCoordinates" in group:
-                coords_int = group["IntegerCoordinates"][:]
-                coords = coords_int /(2.0**32) * box_size
-            else:
-                raise KeyError(f"Coordinates not found in {fp}")
-            vels = group["Velocities"][:]
+    for i in range(8):
+        with h5py.File(snapdir.name +"/snap_%03d.%i.hdf5"%(snap_num,i), "r") as f:
+            coords = f['PartType1']['IntegerCoordinates'][:] / pow(2,32) * 500
+            vels = f['PartType1']['Velocities'][:]
 
+            n = coords.shape[0]
             pos[offset:offset+n] = coords
             vel[offset:offset+n] = vels
-            offset +=n
+            offset += n
 
     return {
         "path": base_path,
@@ -103,19 +83,8 @@ def read_snap(base_path, snap_num, part_type="PartType1"):
         "vel": vel,
         "box_size": box_size,
         "redshift": redshift,
-        "header": header,
     }
 
-
-def parse_args():
-    parser = argparse.ArgumentParser(
-        description="Read snapshot particles and save Coordinates/Velocities arrays."
-    )
-    parser.add_argument("--base-path", required=True, help="Path containing snapdir_### or the snapdir itself.")
-    parser.add_argument("--snap-num", type=int, required=True, help="Snapshot number (e.g. 0).")
-    parser.add_argument("--part-type", default="PartType1", help="Particle group to read.")
-    parser.add_argument("--out-dir", default="outputs", help="Output directory for .npy files.")
-    return parser.parse_args()
 
 def main():
     args = parse_args()
@@ -124,13 +93,11 @@ def main():
     out = Path(args.out_dir)
     out.mkdir(parents=True, exist_ok=True)
     
-    header = data.get("header", {})
     meta = {
         "snap_num": args.snap_num,
         "part_type": args.part_type,
         "box_size": data.get("box_size"),
         "redshift": data.get("redshift"),
-        "num_files": header.get("NumFilesPerSnapshot"),
         "num_particles": int(data["pos"].shape[0]),
     }
 
@@ -139,7 +106,7 @@ def main():
     meta_path.write_text(json.dumps(meta, indent=2))
 
     np.save(out / "Coordinates.npy", data["pos"])
-    np.save(out / "Velocities.npy", data["vel"])
+    # np.save(out / "Velocities.npy", data["vel"])
 
     print(f"Total particles: {data['pos'].shape[0]}")
     if data["redshift"] is not None:
