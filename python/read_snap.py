@@ -52,9 +52,9 @@ def read_snap(base_path, snap_num, part_type="PartType1", N=8):
     print('Reading snapshot from %s'%snapdir)
     
     nparts = 0
-    for i in range(8):
+    for i in range(N):
         with h5py.File(snapdir.name +"/snap_%03d.%i.hdf5"%(snap_num,i), "r") as f:
-            nparts += f['PartType1']['Coordinates'].shape[0]
+            nparts += f[part_type]['Coordinates'].shape[0]
             box_size = f['Header'].attrs['BoxSize']
             redshift = f['Header'].attrs['Redshift']
 
@@ -66,10 +66,10 @@ def read_snap(base_path, snap_num, part_type="PartType1", N=8):
 
     # Second pass: fill them
     offset = 0
-    for i in range(8):
+    for i in range(N):
         with h5py.File(snapdir.name +"/snap_%03d.%i.hdf5"%(snap_num,i), "r") as f:
-            coords = f['PartType1']['IntegerCoordinates'][:] / pow(2,32) * 500
-            vels = f['PartType1']['Velocities'][:]
+            coords = f[part_type]['IntegerCoordinates'][:] / pow(2,32) * box_size
+            vels = f[part_type]['Velocities'][:]
 
             n = coords.shape[0]
             pos[offset:offset+n] = coords

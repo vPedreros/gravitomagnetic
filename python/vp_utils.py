@@ -157,7 +157,7 @@ chi_interp = interp1d(z_table, chi_table, kind="cubic", fill_value="extrapolate"
 
 def chi_of_z(z):
     """
-    Comoving distance as a function in redshift χ(z), in Mpc/h.
+    Comoving distance as a function in redshift χ(z), in Mpc.
     """
     return chi_interp(z)
 
@@ -277,7 +277,7 @@ def C_ell_kSZ(z_s, ell, kmin, kmax, Pk, z_min=1e-5, Pk_evol=False, pars=paramete
         def integrand(x):
             chi_x = chi_of_z(x)
             val = Pk((ell/chi_x, x)) if Pk_evol else Pk(ell/chi_x)
-            val *= (pars['SigmaT']*Mpc_2_m*n_ele(x)*(1+x)**2*np.exp(-2*tau_optical_depth(x)))**2/pars['c']
+            val *= (pars['SigmaT']*Mpc_2_m*n_ele(x)*(1+x)**2*np.exp(-tau_optical_depth(x)))**2/pars['c']
             val /= Hubble(x, pars)
             val /= chi_x**2
             return val

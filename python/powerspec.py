@@ -4,15 +4,13 @@ The data should be in .npy format, containing the positions and velocities
 of the dark matter particles. All of this is using the Pylians3 library.
 """
 
-import argparse, read_snap, h5py, json
+import argparse, json
 import numpy as np
 
-from classy import Class
 from pathlib import Path
 
 
 from pylab import *
-import MAS_library as MASL
 import Pk_library as PKL
 
 import vp_utils as utils
@@ -24,7 +22,6 @@ def parse_args():
         description="Compute power spectrum from a snapshot using Pylians3."
     )
     parser.add_argument("--in-dir", required=True, help="Path containing .npy files and metadata.")
-    parser.add_argument("--ngrid", type=int, default=1024, help="Dimension of the grid.")
     parser.add_argument("--mas", default="CIC", help="Mass assignment scheme.")
     parser.add_argument("--threads", type=int, default=1, help="Number of threads for Pk computation.")
     parser.add_argument("--out-dir", default="outputs", help="Output directory for .npy files.")

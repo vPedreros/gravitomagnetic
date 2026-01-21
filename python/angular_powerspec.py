@@ -4,17 +4,11 @@ The data should be in .npy format, containing the positions and velocities
 of the dark matter particles. All of this is using the Pylians3 library.
 """
 
-import argparse, read_snap, h5py, json
+import argparse, json
 import numpy as np
 
-from classy import Class
 from pathlib import Path
 from scipy.interpolate import RegularGridInterpolator, interp1d
-
-
-from pylab import *
-import MAS_library as MASL
-import Pk_library as PKL
 
 import vp_utils as utils
 
