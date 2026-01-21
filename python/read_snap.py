@@ -58,7 +58,7 @@ def read_snap(base_path, snap_num, part_type="PartType1", N=8):
     for i in range(N):
         fname = snapdir / f"snap_{snap_num:03d}.{i}.hdf5"
         with h5py.File(fname, "r") as f:
-            nparts += f[part_type]['Coordinates'].shape[0]
+            nparts += f[part_type]['IntegerCoordinates'].shape[0]
             box_size = f['Header'].attrs['BoxSize']
             redshift = f['Header'].attrs['Redshift']
 
