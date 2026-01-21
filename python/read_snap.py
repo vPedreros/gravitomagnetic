@@ -48,12 +48,16 @@ def read_snap(base_path, snap_num, part_type="PartType1", N=8):
     N is the number of divisions for a snapshot
     """
     snapdir = find_path(base_path, snap_num)
+    
+    if not snapdir.is_dir():
+        raise FileNotFoundError(f"Snapshot directory not found: {snapdir} (cwd={Path.cwd()})")
 
     print('Reading snapshot from %s'%snapdir)
     
     nparts = 0
     for i in range(N):
-        with h5py.File(snapdir.name +"/snap_%03d.%i.hdf5"%(snap_num,i), "r") as f:
+        fname = snapdir / f"snap_{snap_num:03d}.{i}.hdf5"
+        with h5py.File(fname, "r") as f:
             nparts += f[part_type]['Coordinates'].shape[0]
             box_size = f['Header'].attrs['BoxSize']
             redshift = f['Header'].attrs['Redshift']
@@ -67,7 +71,8 @@ def read_snap(base_path, snap_num, part_type="PartType1", N=8):
     # Second pass: fill them
     offset = 0
     for i in range(N):
-        with h5py.File(snapdir.name +"/snap_%03d.%i.hdf5"%(snap_num,i), "r") as f:
+        fname = snapdir / f"snap_{snap_num:03d}.{i}.hdf5"
+        with h5py.File(fname, "r") as f:
             coords = f[part_type]['IntegerCoordinates'][:] / pow(2,32) * box_size
             vels = f[part_type]['Velocities'][:]
 
