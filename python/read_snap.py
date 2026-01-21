@@ -106,7 +106,7 @@ def main():
     meta_path.write_text(json.dumps(meta, indent=2))
 
     np.save(out / "Coordinates.npy", data["pos"])
-    # np.save(out / "Velocities.npy", data["vel"])
+    np.save(out / "Velocities.npy", data["vel"])
 
     print(f"Total particles: {data['pos'].shape[0]}")
     if data["redshift"] is not None:

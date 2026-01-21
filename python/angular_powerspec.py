@@ -18,6 +18,7 @@ import Pk_library as PKL
 
 import vp_utils as utils
 
+parameters_sim = utils.parameters_sim
 
 def parse_args():
     parser = argparse.ArgumentParser(
@@ -55,8 +56,15 @@ def main():
     out = Path(args.out_dir)
     out.mkdir(parents=True, exist_ok=True)
 
+    meta = _load_metadata(in_dir)
+    z = meta.get("redshift")
+
+    factor = 6*parameters_sim['H0']**2*parameters_sim['Omega_m']*(1+z) 
+
+    Pk_B = Pk_curl*factor**2 / k_curl**6
+
     Pk_matter_int = interp1d(np.log(k_m), np.log(Pk_m), kind='cubic')
-    Pk_B_int = interp1d(np.log(k_curl), np.log(Pk_curl), kind='cubic')
+    Pk_B_int = interp1d(np.log(k_curl), np.log(Pk_B), kind='cubic')
 
     def Pk_matter_interp(k):
         return np.exp(Pk_matter_int(np.log(k)))
@@ -64,8 +72,6 @@ def main():
     def Pk_q_interp(k):
         return np.exp(Pk_B_int(np.log(k)))*k**4
 
-    meta = _load_metadata(in_dir)
-    z = meta.get("redshift")
 
     ell_grid = np.arange(int(1e2), int(1e4), step=49)
 

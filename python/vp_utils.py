@@ -5,7 +5,6 @@ from scipy.interpolate import interp1d
 from astropy import constants as const
 from astropy import units
 
-
 c_kms = const.c.to('km/s').value  # speed of light in km/s
 Mpc_2_m = units.Mpc.to(units.m)
 # ==================================================
@@ -103,7 +102,7 @@ def build_cosmo_params_from_file(path, extra_defaults=None):
 
     return params
 
-parameters_sim = build_cosmo_params_from_file("/home/vpedre/nerding/gravitomagnetic/snapdir_000/parameters-usedvalues")
+parameters_sim = build_cosmo_params_from_file("snapdir_000/parameters-usedvalues")
 
 parameters_sim['w_de'] = -1
 parameters_sim['khN'] = 1024/500*np.pi

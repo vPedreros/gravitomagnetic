@@ -17,6 +17,7 @@ import Pk_library as PKL
 
 import vp_utils as utils
 
+parameters_sim = utils.parameters_sim
 
 def parse_args():
     parser = argparse.ArgumentParser(
@@ -70,11 +71,21 @@ def main():
     out = Path(args.out_dir)
     out.mkdir(parents=True, exist_ok=True)
 
-    Pk = PKL.Pk(delta, args.ngrid, 0, args.mas, args.threads, args.verbose)
-    k_m, Pk_m = Pk.k3D, Pk.Pk[:,0] #monopole
+    Pk = PKL.Pk(delta, box_size, 0, args.mas, args.threads, args.verbose)
+    kh_m, Pkh_m = Pk.k3D, Pk.Pk[:,0] # monopole
 
-    k_curl, Pk_curl, _ = PKL.Pk_curl(qx, qy, qz, args.ngrid, args.mas, args.threads, cross_terms=False)
+    kh_curl, Pkh_curl, _ = PKL.Pk_curl(qx, qy, qz, box_size, args.mas, args.threads, cross_terms=False)
     
+    # We mask the power spectra, and convert to no h units
+    mask_m = (kh_m<parameters_sim['khN']) & (kh_m>parameters_sim['khF'])
+    mask_curl = (kh_curl<parameters_sim['khN']) & (kh_curl>parameters_sim['khF'])
+    h = parameters_sim['h']
+
+    k_m = kh_m[mask_m] * h
+    Pk_m = Pkh_m[mask_m] / h**3
+    k_curl = kh_curl[mask_curl] * h
+    Pk_curl = Pkh_curl[mask_curl] / h**3
+
     np.save(out / "k_m.npy", k_m)
     np.save(out / "Pk_m.npy", Pk_m)
     np.save(out / "k_curl.npy", k_curl)
