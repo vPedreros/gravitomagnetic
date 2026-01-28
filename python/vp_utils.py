@@ -102,7 +102,7 @@ def build_cosmo_params_from_file(path, extra_defaults=None):
 
     return params
 
-parameters_sim = build_cosmo_params_from_file("snapdir_000/parameters-usedvalues")
+parameters_sim = build_cosmo_params_from_file("/cosma8/data/dp203/bl267/Data/MG_Arepo_runs/FORGE-BRIDGE/FORGE/Particle_Snapshots/L500_N1024_Seed_4257_Node_000_Omega_m_0.31315_S8_0.83954_h_0.6737_fR0_0.0_sigma8_0.82172/parameters-usedvalues")
 
 parameters_sim['w_de'] = -1
 parameters_sim['khN'] = 1024/500*np.pi
@@ -194,7 +194,7 @@ tau_optical_depth = np.vectorize(tau_optical_depth)
 # =====================
 
 
-def C_ell_Phi(z_s, ell, kmin, kmax, Pk, z_min=1e-5, Pk_evol=False, pars=parameters_sim, N_int=int(1e4), integr_method='simpson'):
+def C_ell_Phi(z_s, ell, kmin, kmax, Pk, z_min=1e-5, Pk_evol=True, pars=parameters_sim, N_int=int(1e4), integr_method='simpson'):
     """
     """
     z_grid = np.geomspace(z_min, z_s, N_int)
@@ -206,7 +206,7 @@ def C_ell_Phi(z_s, ell, kmin, kmax, Pk, z_min=1e-5, Pk_evol=False, pars=paramete
     chi = chi_grid[mask]
     if z.size == 0:
         import warnings
-        warnings.warn(f"C_ell_PhiPhi: No valid z found for ell={ell}. Returning 0.")
+        warnings.warn(f"C_ell_Phi: No valid z found for ell={ell}. Returning 0.")
         return 0.0
     if Pk_evol:
         C_ell_int = Pk((ell/chi , z))
@@ -243,11 +243,58 @@ def C_ell_Phi(z_s, ell, kmin, kmax, Pk, z_min=1e-5, Pk_evol=False, pars=paramete
     return C_ell * 9/4 * pars['H0']**4 * pars['Omega_m']**2 / pars['c']**3
 
 
-def C_ell_B(z_s, ell, kmin, kmax, Pk, z_min=1e-5, Pk_evol=False, pars=parameters_sim, N_int=int(1e4), integr_method='simpson'):
-    return (4/pars['c']**2) * C_ell_Phi(z_s, ell, kmin, kmax, Pk, z_min, Pk_evol, pars, N_int, integr_method)
+def C_ell_B(z_s, ell, kmin, kmax, Pk, z_min=1e-5, Pk_evol=True, pars=parameters_sim, N_int=int(1e4), integr_method='simpson'):
+    """
+    """
+    z_grid = np.geomspace(z_min, z_s, N_int)
+    chi_grid = chi_of_z(z_grid)
+    chi_s = chi_of_z(z_s)
+    # restrict to valid chi by k-range
+    mask = (ell/chi_grid < kmax) & (ell/chi_grid > kmin)
+    z = z_grid[mask]
+    chi = chi_grid[mask]
+
+    factor = 6*parameters_sim['H0']**2*parameters_sim['Omega_m']*(1+z)
+    if z.size == 0:
+        import warnings
+        warnings.warn(f"C_ell_B: No valid z found for ell={ell}. Returning 0.")
+        return 0.0
+    if Pk_evol:
+        C_ell_int = Pk((ell/chi , z))
+    else:
+        C_ell_int = Pk(ell/chi)
+
+    C_ell_int *= (chi/chi_s-1)**2
+    C_ell_int *= (1 + z)**2 / Hubble(z, pars)
+    C_ell_int /= factor ** 2
+    # integrate in z
+    if integr_method == 'simpson':
+        C_ell = simpson(C_ell_int, x=z)
+    elif integr_method == 'cumsum':
+        dz = np.diff(z)
+        dz = np.append(dz, dz[-1])  # pad last element for same length
+        C_ell = np.sum(C_ell_int * dz)
+    elif integr_method == 'quad':
+        def integrand(x):
+            chi_x = chi_of_z(x)
+            chi_s = chi_of_z(z_s)
+            val = Pk((ell/chi_x, x)) if Pk_evol else Pk(ell/chi_x)
+            val *= (chi_x/chi_s-1)**2
+            val *= (1 + x)**2 / Hubble(x, pars)
+            return val
+        C_ell = quad(integrand, z[0], z[-1], limit=400)[0]
+    elif integr_method == 'trapezoid':
+        C_ell = trapezoid(C_ell_int, x=z)
+    elif integr_method == 'cum_simpson':
+        C_ell = cumulative_simpson(C_ell_int, x=z)[-1]
+    elif integr_method == 'cum_trapezoid':
+        C_ell = cumulative_trapezoid(C_ell_int, x=z)[-1]
+    else: 
+        raise('Invalid selection of integration method, please choose between quad, simpson, cumsum or trapz')
+    return (4/pars['c']**2) * C_ell * 9/4 * pars['H0']**4 * pars['Omega_m']**2 / pars['c']**3
 
 
-def C_ell_kSZ(z_s, ell, kmin, kmax, Pk, z_min=1e-5, Pk_evol=False, pars=parameters_sim, N_int=int(1e4), integr_method='simpson'):
+def C_ell_kSZ(z_s, ell, kmin, kmax, Pk, z_min=1e-5, Pk_evol=True, pars=parameters_sim, N_int=int(1e4), integr_method='simpson'):
     """
     """
     z_grid = np.geomspace(z_min, z_s, N_int)
@@ -256,15 +303,18 @@ def C_ell_kSZ(z_s, ell, kmin, kmax, Pk, z_min=1e-5, Pk_evol=False, pars=paramete
     mask = (ell/chi_grid < kmax) & (ell/chi_grid > kmin)
     z = z_grid[mask]
     chi = chi_grid[mask]
+
+    factor = 6*parameters_sim['H0']**2*parameters_sim['Omega_m']*(1+z)
     if z.size == 0:
         import warnings
-        warnings.warn(f"C_ell_lensing: No valid z found for ell={ell}. Returning 0.")
+        warnings.warn(f"C_ell_kSZ: No valid z found for ell={ell}. Returning 0.")
         return 0.0
 
     C_ell_int = Pk((ell/chi, z)) if Pk_evol else Pk(ell/chi)
     C_ell_int *= (pars['SigmaT']*Mpc_2_m*n_ele(z)*(1+z)**2*np.exp(-tau_optical_depth(z)))**2/pars['c']
     C_ell_int /= Hubble(z, pars)
     C_ell_int /= chi**2
+    C_ell_int /= factor**2
 
     # integrate in z
     if integr_method == 'simpson':
@@ -293,7 +343,7 @@ def C_ell_kSZ(z_s, ell, kmin, kmax, Pk, z_min=1e-5, Pk_evol=False, pars=paramete
     return C_ell
 
 
-def C_ell_B_X_kSZ(z_s, ell, kmin, kmax, Pk, z_min=1e-5, Pk_evol=False, pars=parameters_sim, N_int=int(1e4), integr_method='simpson'):
+def C_ell_B_X_kSZ(z_s, ell, kmin, kmax, Pk, z_min=1e-5, Pk_evol=True, pars=parameters_sim, N_int=int(1e4), integr_method='simpson'):
     """
     """
     z_grid = np.geomspace(z_min, z_s, N_int)
@@ -303,15 +353,18 @@ def C_ell_B_X_kSZ(z_s, ell, kmin, kmax, Pk, z_min=1e-5, Pk_evol=False, pars=para
     mask = (ell/chi_grid < kmax) & (ell/chi_grid > kmin)
     z = z_grid[mask]
     chi = chi_grid[mask]
+
+    factor = 6*parameters_sim['H0']**2*parameters_sim['Omega_m']*(1+z)
     if z.size == 0:
         import warnings
-        warnings.warn(f"C_ell_lensing: No valid z found for ell={ell}. Returning 0.")
+        warnings.warn(f"C_ell_BxkSZ: No valid z found for ell={ell}. Returning 0.")
         return 0.0
 
     C_ell_int = Pk((ell/chi, z)) if Pk_evol else Pk(ell/chi)
     C_ell_int *= 3*(pars['H0']**2/pars['c']**3) * pars['Omega_m']*pars['SigmaT']*Mpc_2_m
     C_ell_int *= n_ele(z)*(1+z)**3 * np.exp(-tau_optical_depth(z)) * (chi_s - chi)/(chi_s*chi)
     C_ell_int /= Hubble(z, pars)
+    C_ell_int /= factor**2
 
     # integrate in z
     if integr_method == 'simpson':
@@ -340,7 +393,7 @@ def C_ell_B_X_kSZ(z_s, ell, kmin, kmax, Pk, z_min=1e-5, Pk_evol=False, pars=para
     return C_ell
 
 
-def C_ell_XY(z_s, ell, kmin, kmax, Pk, type_XY, z_min=1e-5, Pk_evol=False, pars=parameters_sim, N_int=int(1e4), integr_method='simpson'):
+def C_ell_XY(z_s, ell, kmin, kmax, Pk, type_XY, z_min=1e-5, Pk_evol=True, pars=parameters_sim, N_int=int(1e4), integr_method='simpson'):
     if type_XY == 'Phi':
         return C_ell_Phi(z_s, ell, kmin, kmax, Pk, z_min, Pk_evol, pars, N_int, integr_method)
     elif type_XY == 'B':
