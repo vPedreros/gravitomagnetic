@@ -39,7 +39,7 @@ def main():
 
     z_list = []
     Pkm_list = []
-    PkB_list = []
+    Pk_curl_list = []
 
     for i in range(27):
         snap_dir = in_dir / f"snap_{i:03d}"
@@ -53,17 +53,15 @@ def main():
         k_curl = np.load(snap_dir / "k_curl.npy")
         Pk_curl = np.load(snap_dir / "Pk_curl.npy")
 
-        Pk_B = Pk_curl*factor**2 / k_curl**6
-
         z_list.append(z)
         Pkm_list.append(Pk_m)
-        PkB_list.append(Pk_B)
+        Pk_curl_list.append(Pk_curl)
 
     # Sort redshift!
     z_order = np.argsort(z_list)
     z_grid = np.array(z_list)[z_order]
     Pkm_grid = np.array(Pkm_list)[z_order, :]
-    PkB_grid = np.array(PkB_list)[z_order, :]
+    Pk_curl_grid = np.array(Pk_curl_list)[z_order, :]
 
     logk_m = np.log(k_m)
     logk_c = np.log(k_curl)
@@ -72,8 +70,8 @@ def main():
         (z_grid, logk_m), np.log(Pkm_grid),
         bounds_error=False, fill_value=None
     )
-    logPk_B_interp = RegularGridInterpolator(
-        (z_grid, logk_c), np.log(PkB_grid),
+    logPk_curl_interp = RegularGridInterpolator(
+        (z_grid, logk_c), np.log(Pk_curl_grid),
         bounds_error=False, fill_value=None
     )
 
@@ -89,8 +87,8 @@ def main():
         k = np.asarray(k, float)
         z = np.asarray(z, float)
         pts = np.column_stack([z, np.log(k)])
-        Pk_B = np.exp(logPk_B_interp(pts))
-        return Pk_B * k**4
+        Pk_B = np.exp(logPk_curl_interp(pts))
+        return Pk_B
 
 
     ell_grid = np.logspace(2, 4, 40)
