@@ -102,7 +102,7 @@ def build_cosmo_params_from_file(path, extra_defaults=None):
 
     return params
 
-parameters_sim = build_cosmo_params_from_file("/Users/vpedreros/nerding/gravitomagnetic/output/lcdm/parameters-usedvalues_seed2080")
+parameters_sim = build_cosmo_params_from_file("/cosma8/data/dp203/bl267/Data/MG_Arepo_runs/FORGE-BRIDGE/BRIDGE/Particle_Snapshots/L500_N1024_Seed_4257_Node_006_Omega_m_0.35339_S8_0.78021_h_0.78052_H0rc_0.5646738_sigma8_0.71886/parameters-usedvalues")
 
 parameters_sim['w_de'] = -1
 parameters_sim['khN'] = 1024/500*np.pi
