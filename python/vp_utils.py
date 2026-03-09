@@ -68,7 +68,7 @@ def build_cosmo_params_from_file(path, extra_defaults=None):
         "c": c_kms,          # speed of light km/s
         "m_ele": 9.11E-31, # kg
         "m_H": 1.67E-27,  # kg
-        "m_He": 6.65E-27, # kg (approx)
+        "m_He": 6.65E-27, # kg
         "SigmaT": const.sigma_T.value, # m^2
         "Ombh2": Omega_b * h**2,
         "xe": 1.0,
@@ -102,7 +102,7 @@ def build_cosmo_params_from_file(path, extra_defaults=None):
 
     return params
 
-parameters_sim = build_cosmo_params_from_file("/cosma8/data/dp203/bl267/Data/MG_Arepo_runs/FORGE-BRIDGE/FORGE/Particle_Snapshots/L500_N1024_Seed_4257_Node_000_Omega_m_0.31315_S8_0.83954_h_0.6737_fR0_0.0_sigma8_0.82172/parameters-usedvalues")
+parameters_sim = build_cosmo_params_from_file("/Users/vpedreros/nerding/gravitomagnetic/output/lcdm/parameters-usedvalues_seed2080")
 
 parameters_sim['w_de'] = -1
 parameters_sim['khN'] = 1024/500*np.pi
@@ -183,7 +183,7 @@ def tau_optical_depth(z, pars=parameters_sim):
     [tau] = dimensionless
     Integration in terms of dz=H*dr
     """
-    tau_optical_depth_int = lambda x: pars['SigmaT']*pars['c']*Mpc_2_m*n_ele(x, pars)*(1+x)**2/Hubble(x, pars)
+    tau_optical_depth_int = lambda x: pars['SigmaT']*pars['c']*Mpc_2_m*n_ele(x, pars)/(1+x)/Hubble(x, pars)
     return quad(tau_optical_depth_int, 0, z)[0]
 
 tau_optical_depth = np.vectorize(tau_optical_depth)
