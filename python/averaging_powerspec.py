@@ -21,8 +21,8 @@ def main():
 
         print('computing', m)
 
-        out_pk = base_path / m / "Pk"
-        out_pcurl = base_path / m / "Pcurl"
+        out_pk = base_path / m / "Pk_matter"
+        out_pcurl = base_path / m / "Pk_curl"
 
         out_pk.mkdir(parents=True, exist_ok=True)
         out_pcurl.mkdir(parents=True, exist_ok=True)
@@ -48,7 +48,7 @@ def main():
             Pk =    np.mean([pkm_1,pkm_2], axis=0)
             Pcurl = np.mean([pkq_1,pkq_2], axis=0)
 
-            with open(path_snap1 / "metadata.json") as f:
+            with open(path_snap1 / "snapshot_metadata.json") as f:
                 meta = json.load(f)
 
             z = meta["redshift"]
@@ -64,7 +64,7 @@ def main():
                 "k": kq_1,
                 "z": z
             }
-            
+
             np.save(out_pcurl / f"{i:03d}.npy", data_curl)
             np.save(out_pk / f"{i:03d}.npy", data_m)
         
