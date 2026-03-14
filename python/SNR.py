@@ -133,20 +133,19 @@ def noise_temperature(ell, pars_exp):
     return factor * np.exp(arg_exp)
 
 
-def Cov(ell_list, C_ell_kappaB, C_ell_TT, C_ell_kappaWL, C_ell_kSZ, pars_surv, pars_exp):
-    ell_list = np.logspace(2, 4, 40)
+def Cov(ell_list, C_ell_B_X_kSZ, C_ell_TT, C_ell_kappaWL, C_ell_kSZ, pars_surv, pars_exp):
     logell = np.log10(ell_list)
     dlog = logell[1] - logell[0]
     edges = 10**(np.r_[logell[0] - dlog/2, 0.5*(logell[:-1] + logell[1:]), logell[-1] + dlog/2])
     Delta_ell = np.diff(edges)
 
     factor = Delta_ell * pars_surv['f_sky'] * (2*ell_list + 1)
-    contributions = C_ell_kappaB**2 + (C_ell_TT + C_ell_kSZ + noise_temperature(ell_list, pars_exp))*(C_ell_kappaWL + C_ell_kappaB + noise_convergence(pars_surv))
+    contributions = C_ell_B_X_kSZ**2 + (C_ell_TT + C_ell_kSZ + noise_temperature(ell_list, pars_exp))*(C_ell_kappaWL + noise_convergence(pars_surv))
     return contributions / factor
 
 
-def SNR(ell_list, C_ell_kappaB, C_ell_TT, C_ell_kappaWL, C_ell_kSZ, survey, experiment):
-    return np.sqrt(C_ell_kappaB**2 / Cov(ell_list, C_ell_kappaB, C_ell_TT, C_ell_kappaWL, C_ell_kSZ, pars_surv[survey], pars_exp[experiment]))
+def SNR(ell_list, C_ell_B_X_kSZ, C_ell_TT, C_ell_kappaWL, C_ell_kSZ, survey, experiment):
+    return np.sqrt(C_ell_B_X_kSZ**2 / Cov(ell_list, C_ell_B_X_kSZ, C_ell_TT, C_ell_kappaWL, C_ell_kSZ, pars_surv[survey], pars_exp[experiment]))
 
 
 def main():
@@ -156,7 +155,7 @@ def main():
         ell_grid = np.load(path_C_ell / 'C_ells' / f"ell_grid_z={args.z_source}.npy")
         ell_idx = np.round(ell_grid).astype(int)
 
-        signal_to_noise = SNR(ell_grid, C_ell_XY['B'], C_ell_TT[m][ell_idx], C_ell_XY['Phi'], C_ell_XY['kSZ'], 'LSST', 'SO')
+        signal_to_noise = SNR(ell_grid, C_ell_XY['B_X_kSZ'], C_ell_TT[m][ell_idx], C_ell_XY['Phi'], C_ell_XY['kSZ'], 'LSST', 'SO')
 
         np.save(path_C_ell / f"SNRs/SNR_z={args.z_source}.npy", signal_to_noise)
         
