@@ -12,6 +12,8 @@ def parse_args():
     parser.add_argument("--in-dir", type=str, required=True, help="Path containing .npy files and metadata.")
     parser.add_argument("--out-dir", type=str, default="outputs", help="Output directory for .npy files.")
     parser.add_argument("--z_source", type=float, required=True, help="Maximum redshift for integration")
+    parser.add_argument("--survey", type=str, required=True, help="Name of the survey (LSST or Euclid)")
+    parser.add_argument("--cmb-exp", type=str, required=True, help="Name of the CMB experiment (Planck or SO)")
     return parser.parse_args()
 
 args = parse_args()
@@ -151,13 +153,18 @@ def SNR(ell_list, C_ell_B_X_kSZ, C_ell_TT, C_ell_kappaWL, C_ell_kSZ, survey, exp
 def main():
     for m in models:
         path_C_ell = base_path / m
+        
+
         C_ell_XY = np.load(path_C_ell / 'C_ells' / f"C_ells_XY_z={args.z_source}.npy", allow_pickle=True).item()
         ell_grid = np.load(path_C_ell / 'C_ells' / f"ell_grid_z={args.z_source}.npy")
         ell_idx = np.round(ell_grid).astype(int)
 
-        signal_to_noise = SNR(ell_grid, C_ell_XY['B_X_kSZ'], C_ell_TT[m][ell_idx], C_ell_XY['Phi'], C_ell_XY['kSZ'], 'LSST', 'SO')
+        signal_to_noise = SNR(ell_grid, C_ell_XY['B_X_kSZ'], C_ell_TT[m][ell_idx], C_ell_XY['Phi'], C_ell_XY['kSZ'], args.survey, args.cmb_exp)
 
-        np.save(path_C_ell / f"SNRs/SNR_z={args.z_source}.npy", signal_to_noise)
+        out = path_C_ell / "SNRs"/ f"{args.survey}_{args.cmb_exp}"
+        out.mkdir(parents=True, exist_ok=True)
+
+        np.save(out / f"SNR_z={args.z_source}.npy", signal_to_noise)
         
 if __name__ == "__main__":
     main()
