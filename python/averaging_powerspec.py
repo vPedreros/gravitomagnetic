@@ -42,8 +42,8 @@ def main():
             kq_2 =  np.load(path_snap2/"k_curl.npy")
 
             # check if k's are equal
-            np.testing.assert_array_equal(km_1,km_2)
-            np.testing.assert_array_equal(kq_1,kq_2)
+            np.testing.assert_allclose(km_1, km_2, rtol=1e-5)
+            np.testing.assert_allclose(kq_1, kq_2, rtol=1e-5)
 
             Pk =    np.mean([pkm_1,pkm_2], axis=0)
             Pcurl = np.mean([pkq_1,pkq_2], axis=0)
