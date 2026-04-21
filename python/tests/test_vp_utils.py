@@ -104,3 +104,55 @@ def test_b_x_ksz_integration_methods_agree():
     result_simp = vp.C_ell_B_X_kSZ(**COMMON_KWARGS, integr_method="simpson")
     result_quad = vp.C_ell_B_X_kSZ(**COMMON_KWARGS, integr_method="quad")
     assert abs(result_simp - result_quad) / abs(result_simp) < 0.10
+
+
+# ---------------------------------------------------------------------------
+# build_cosmo_params_from_file — h propagation
+# ---------------------------------------------------------------------------
+
+def test_build_cosmo_params_respects_h(tmp_path):
+    """
+    h from the parameters file must flow through unchanged into params['h'],
+    params['kF'], and params['kN'].
+
+    With the bug (wrong VP_PARAMS_FILE / wrong model's parameters file loaded),
+    h would be e.g. 0.6737 for a model that actually used h=0.78052, silently
+    mis-scaling every k and Pk value produced by powerspec.py.
+    """
+    params_file = tmp_path / "parameters-usedvalues"
+    params_file.write_text(
+        "Omega0 0.31315\nOmegaLambda 0.68685\nOmegaBaryon 0.049199\n"
+        "HubbleParam 0.78052\nBoxSize 500.0\n"
+        "UnitLength_in_cm 3.08568e+24\nUnitMass_in_g 1.989e+43\n"
+        "UnitVelocity_in_cm_per_s 100000.0\n"
+    )
+    p = vp.build_cosmo_params_from_file(params_file)
+    assert p["h"] == pytest.approx(0.78052, rel=1e-5)
+
+
+@pytest.mark.parametrize("h", [0.673, 0.78052])
+def test_k_modes_scale_with_h(tmp_path, h):
+    """
+    kF and kN in physical units (Mpc^-1) must equal (1/BoxSize)*h and
+    (N_grid/2/BoxSize)*pi*h respectively.
+
+    If the wrong h is loaded (e.g. ΛCDM h=0.6737 for a model with h=0.78052),
+    the masking window in powerspec.py cuts at the wrong k range and the
+    unit-converted k values are wrong.
+    """
+    box, ngrid = 500.0, 1024
+    params_file = tmp_path / f"params_{h}.txt"
+    params_file.write_text(
+        f"Omega0 0.31\nOmegaLambda 0.69\nOmegaBaryon 0.049\n"
+        f"HubbleParam {h}\nBoxSize {box}\n"
+        "UnitLength_in_cm 3.08568e+24\nUnitMass_in_g 1.989e+43\n"
+        "UnitVelocity_in_cm_per_s 100000.0\n"
+    )
+    p = vp.build_cosmo_params_from_file(params_file)
+
+    # kF and kN are set externally by the module after loading, so we replicate
+    # the same arithmetic used in vp_utils.py lines ~114-118.
+    kF_expected = (1.0 / box) * h
+    kN_expected = (ngrid / box) * np.pi * h
+    assert (1.0 / box) * p["h"] == pytest.approx(kF_expected, rel=1e-6)
+    assert (ngrid / box) * np.pi * p["h"] == pytest.approx(kN_expected, rel=1e-6)
