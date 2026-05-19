@@ -107,6 +107,24 @@ def test_b_x_ksz_integration_methods_agree():
 
 
 # ---------------------------------------------------------------------------
+# Absolute-value baselines.  These pin each C_ell function's simpson output at
+# the COMMON_KWARGS fiducial inputs.  Captured from the pre-refactor code so
+# any future change to the kernel logic that shifts the physics fails loudly,
+# not silently.  rel=1e-10 allows only float-associativity drift.
+# ---------------------------------------------------------------------------
+
+@pytest.mark.parametrize("fn,expected", [
+    (vp.C_ell_Phi,     6.230122818322606e-15),
+    (vp.C_ell_B,       2.1593428790470605e-24),
+    (vp.C_ell_kSZ,     2.1787388552528067e-27),
+    (vp.C_ell_B_X_kSZ, 5.545271300506326e-26),
+])
+def test_c_ell_baseline_unchanged(fn, expected):
+    result = fn(**COMMON_KWARGS, integr_method="simpson")
+    assert result == pytest.approx(expected, rel=1e-10)
+
+
+# ---------------------------------------------------------------------------
 # build_cosmo_params_from_file — h propagation
 # ---------------------------------------------------------------------------
 

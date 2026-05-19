@@ -6,8 +6,8 @@ Produces two figures:
   2. Ratio P_m / P_m^LCDM and P_curl / P_curl^LCDM to highlight modified-gravity signatures
 
 Usage:
-  python plot_powerspectra.py --in-dir old_output_cosma --out-dir imgs
-  python plot_powerspectra.py --in-dir old_output_cosma --out-dir imgs --redshifts 0 0.5 1 2 --show
+  python plot_powerspectra.py --in-dir output --out-dir imgs
+  python plot_powerspectra.py --in-dir output --out-dir imgs --redshifts 0 0.5 1 2 --show
 """
 
 import argparse

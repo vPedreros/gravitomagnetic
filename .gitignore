@@ -8,11 +8,7 @@ outputs/
 outputs_2/
 gpt/
 test_out/
-<<<<<<< HEAD
-# output/
 cosma_powerspec/
 notebooks/compare_power_spectra.ipynb
 notebooks/compare_sim_cosma_class.ipynb
-=======
 output/
->>>>>>> f803b91 (update gitignore)
