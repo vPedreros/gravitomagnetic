@@ -181,10 +181,6 @@ def plot_snr_per_ell_colorbar(base, models, cmb_exp, out_dir, show):
 
         ax.set_title(MODEL_LABELS[model])
         ax.set_xlabel(r"Multipole $\ell$")
-        for side in ("top", "right", "bottom", "left"):
-            ax.spines[side].set_visible(True)
-        ax.tick_params(which="both", top=True, right=True,
-                       labeltop=False, labelright=False)
 
     axes[0].set_ylabel(r"SNR$_\ell$")
 

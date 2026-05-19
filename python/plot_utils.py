@@ -25,16 +25,16 @@ MODEL_COLORS = {
 
 
 def apply_style():
-    """Apply a consistent publication-quality matplotlib style."""
+    """Apply a consistent publication-quality matplotlib style.
+
+    All four spines are visible; ticks (major + minor) are drawn on all
+    four sides, but value labels only on the default bottom/left.
+    """
     try:
         import scienceplots
         plt.style.use(["science", "no-latex"])
     except ImportError:
-        plt.rcParams.update({
-            "font.family": "serif",
-            "axes.spines.top": False,
-            "axes.spines.right": False,
-        })
+        plt.rcParams.update({"font.family": "serif"})
     plt.rcParams.update({
         "figure.dpi": 150,
         "savefig.dpi": 300,
@@ -43,7 +43,18 @@ def apply_style():
         "font.size": 9,
         "axes.labelsize": 10,
         "legend.fontsize": 8,
+        "legend.frameon": True,
+        # Four-sided frame + ticks (labels stay on bottom/left)
+        "axes.spines.top": True,
+        "axes.spines.right": True,
+        "axes.spines.bottom": True,
+        "axes.spines.left": True,
         "xtick.direction": "in",
         "ytick.direction": "in",
-        "legend.frameon": False,
+        "xtick.top": True,
+        "ytick.right": True,
+        "xtick.minor.top": True,
+        "ytick.minor.right": True,
+        "xtick.minor.visible": True,
+        "ytick.minor.visible": True,
     })
