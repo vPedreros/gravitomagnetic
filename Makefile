@@ -4,7 +4,7 @@ IMG_DIR ?= imgs
 VP_PARAMS_FILE ?= output/lcdm/parameters-usedvalues
 CELL_QUANTITIES ?= Phi B kSZ B_X_kSZ
 
-.PHONY: test plots plot-powerspec plot-cells plot-cells-cross plot-snr plot-snr-colorbar plot-snr-colorbar-so plot-snr-colorbar-planck
+.PHONY: test plots plot-powerspec plot-cells plot-cells-cross plot-snr plot-snr-cumulative-ell plot-snr-colorbar plot-snr-colorbar-so plot-snr-colorbar-planck
 
 test:
 	$(PYTHON) -m pytest python/tests/ -v
@@ -22,6 +22,10 @@ plot-cells-cross:
 
 plot-snr:
 	VP_PARAMS_FILE=$(VP_PARAMS_FILE) $(PYTHON) python/plot_snr.py --in-dir $(IN_DIR) --out-dir $(IMG_DIR)
+
+z_redshift = 2.0
+plot-snr-cumulative-ell:
+	VP_PARAMS_FILE=$(VP_PARAMS_FILE) $(PYTHON) python/plot_snr.py --in-dir $(IN_DIR) --out-dir $(IMG_DIR) --only cumulative-ell --z-ref $(z_redshift)
 
 plot-snr-colorbar: plot-snr-colorbar-so plot-snr-colorbar-planck
 
