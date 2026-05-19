@@ -44,8 +44,9 @@ def parse_args():
     parser.add_argument("--colorbar-experiments", nargs="+", default=["SO", "Planck"],
                         choices=["SO", "Planck"],
                         help="CMB experiments to plot in the colorbar (per-model) figure.")
-    parser.add_argument("--only", nargs="+", default=["cumulative", "per-ell", "colorbar"],
-                        choices=["cumulative", "per-ell", "colorbar"],
+    parser.add_argument("--only", nargs="+",
+                        default=["cumulative", "per-ell", "cumulative-ell", "colorbar"],
+                        choices=["cumulative", "per-ell", "cumulative-ell", "colorbar"],
                         help="Which plot families to produce.")
     parser.add_argument("--show", action="store_true")
     return parser.parse_args()
@@ -152,6 +153,46 @@ def plot_snr_per_ell(base, models, z_ref, out_dir, show):
     plt.close(fig)
 
 
+def plot_snr_cumulative_vs_ell(base, models, z_ref, out_dir, show):
+    """2x2 grid: cumulative SNR up to ell_max as a function of ell_max, at z_ref.
+
+        SNR(<ell_max) = sqrt(sum_{ell <= ell_max} SNR_ell^2)
+    """
+    fig, axes = plt.subplots(2, 2, figsize=(9, 7), sharex=True, sharey=True)
+    axes_flat = axes.flatten()
+
+    handles = [
+        plt.Line2D([0], [0], ls=MODEL_LS[m], color=MODEL_COLORS[m], label=MODEL_LABELS[m])
+        for m in models
+    ]
+
+    z_used = None
+    for ax, combo in zip(axes_flat, COMBOS):
+        for model in models:
+            try:
+                ell, snr_ell, z_used = load_snr_per_ell(base, model, combo, z_ref)
+            except (FileNotFoundError, ValueError):
+                continue
+            cum = np.sqrt(np.cumsum(snr_ell ** 2))
+            ax.loglog(ell, cum, ls=MODEL_LS[model], color=MODEL_COLORS[model])
+        ax.set_title(COMBO_LABELS[combo])
+        ax.set_ylabel(r"SNR$(<\ell)$")
+
+    for ax in axes[1]:
+        ax.set_xlabel(r"$\ell_\mathrm{max}$")
+
+    axes_flat[0].legend(handles=handles, loc="lower right")
+    ztitle = f"$z_s = {z_used:.1f}$" if z_used is not None else f"$z_s \\approx {z_ref}$"
+    plt.suptitle(rf"Cumulative SNR$(<\ell_\mathrm{{max}})$ at {ztitle}", y=1.01)
+    plt.tight_layout()
+    out = Path(out_dir) / "snr_cumulative_vs_ell.pdf"
+    fig.savefig(out)
+    print(f"Saved {out}")
+    if show:
+        plt.show()
+    plt.close(fig)
+
+
 def plot_snr_per_ell_colorbar(base, models, cmb_exp, out_dir, show):
     """1×N grid (one panel per model) of per-ell SNR vs ell, coloured by z_s.
 
@@ -216,6 +257,8 @@ def main():
         plot_cumulative_snr(base, args.models, out_dir, args.show)
     if "per-ell" in args.only:
         plot_snr_per_ell(base, args.models, args.z_ref, out_dir, args.show)
+    if "cumulative-ell" in args.only:
+        plot_snr_cumulative_vs_ell(base, args.models, args.z_ref, out_dir, args.show)
     if "colorbar" in args.only:
         for exp in args.colorbar_experiments:
             plot_snr_per_ell_colorbar(base, args.models, exp, out_dir, args.show)
