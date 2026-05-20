@@ -1,6 +1,5 @@
 import numpy as np
 from pathlib import Path
-from classy import Class
 import pandas as pd
 import argparse
 
@@ -83,16 +82,20 @@ params_by_model = {
 }
 
 for m in models:
-    CLASS[m] = Class()
-    CLASS[m].set(params_by_model[m])
-    CLASS[m].compute()
-
-    # c_ell = CLASS[m].raw_cl(10000)   # unlensed spectrum
-    c_ell = CLASS[m].lensed_cl(10000)  # lensed spectrum
-
-    ells[m] = c_ell['ell']
-    C_ell_TT[m] = c_ell['tt']  # unlensed tt power spectrum
-    np.save(base_path / m / "Cl_TT.npy", C_ell_TT[m])
+    cache = base_path / m / "Cl_TT.npy"
+    if cache.exists():
+        print(f"[{m}] Loading cached Cl_TT from {cache}")
+        C_ell_TT[m] = np.load(cache)
+        ells[m] = np.arange(len(C_ell_TT[m]))
+    else:
+        from classy import Class
+        CLASS[m] = Class()
+        CLASS[m].set(params_by_model[m])
+        CLASS[m].compute()
+        c_ell = CLASS[m].lensed_cl(10000)
+        ells[m] = c_ell['ell']
+        C_ell_TT[m] = c_ell['tt']
+        np.save(cache, C_ell_TT[m])
 
 
 # Define the survey and experiment parmeters
@@ -151,9 +154,9 @@ def SNR(ell_list, C_ell_B_X_kSZ, C_ell_TT, C_ell_kappaWL, C_ell_kSZ, survey, exp
 
 
 def main():
+    out_base = Path(args.out_dir).expanduser()
     for m in models:
         path_C_ell = base_path / m
-        
 
         C_ell_XY = np.load(path_C_ell / 'C_ells' / f"C_ells_XY_z={args.z_source}.npy", allow_pickle=True).item()
         ell_grid = np.load(path_C_ell / 'C_ells' / f"ell_grid_z={args.z_source}.npy")
@@ -161,7 +164,7 @@ def main():
 
         signal_to_noise = SNR(ell_grid, C_ell_XY['B_X_kSZ'], C_ell_TT[m][ell_idx], C_ell_XY['Phi'], C_ell_XY['kSZ'], args.survey, args.cmb_exp)
 
-        out = path_C_ell / "SNRs"/ f"{args.survey}_{args.cmb_exp}"
+        out = out_base / m / "SNRs" / f"{args.survey}_{args.cmb_exp}"
         out.mkdir(parents=True, exist_ok=True)
 
         np.save(out / f"SNR_z={args.z_source}.npy", signal_to_noise)
