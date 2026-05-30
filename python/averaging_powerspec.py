@@ -10,17 +10,17 @@ angular_powerspec_z.py.
 
 Expected input layout (one entry per snapshot):
 
-    <base-dir>/<model>/<seed1>/snap_NNN/Pk_m.npy
-    <base-dir>/<model>/<seed1>/snap_NNN/Pk_curl.npy
-    <base-dir>/<model>/<seed1>/snap_NNN/k_m.npy
-    <base-dir>/<model>/<seed1>/snap_NNN/k_curl.npy
-    <base-dir>/<model>/<seed1>/snap_NNN/snapshot_metadata.json
+    <base-dir>/<model>/<node_NNN>/<seed1>/snap_NNN/Pk_m.npy
+    <base-dir>/<model>/<node_NNN>/<seed1>/snap_NNN/Pk_curl.npy
+    <base-dir>/<model>/<node_NNN>/<seed1>/snap_NNN/k_m.npy
+    <base-dir>/<model>/<node_NNN>/<seed1>/snap_NNN/k_curl.npy
+    <base-dir>/<model>/<node_NNN>/<seed1>/snap_NNN/snapshot_metadata.json
     (same structure for <seed2>)
 
 Output (overwritten on each run):
 
-    <base-dir>/<model>/Pk_matter/NNN.npy   -- dict {Pk, k, z}
-    <base-dir>/<model>/Pk_curl/NNN.npy     -- dict {Pcurl, k, z}
+    <base-dir>/<model>/<node_NNN>/Pk_matter/NNN.npy   -- dict {Pk, k, z}
+    <base-dir>/<model>/<node_NNN>/Pk_curl/NNN.npy     -- dict {Pcurl, k, z}
 
 Both k and Pk are stored in physical (no-h) units: k in Mpc^-1,
 Pk_matter in Mpc^3, Pk_curl in Mpc^3 (km/s)^2.  The unit conversion
@@ -71,6 +71,9 @@ def parse_args():
         choices=["lcdm", "frhs", "ndgp"],
     )
     parser.add_argument(
+        "--node", default="node_037", help="Number of the node"
+    )
+    parser.add_argument(
         "--seed1", default="seed_2080", help="Name of the first seed subdirectory."
     )
     parser.add_argument(
@@ -100,8 +103,8 @@ def main():
     base_path = Path(args.base_dir)
 
     for m in args.models:
-        path_1 = base_path / m / args.seed1
-        path_2 = base_path / m / args.seed2
+        path_1 = base_path / m / args.node / args.seed1
+        path_2 = base_path / m / args.node / args.seed2
 
         if not path_1.is_dir():
             raise ValueError("path_1 not a directory")
@@ -125,8 +128,8 @@ def main():
             h_ratio = None
             print(f"computing {m} ({args.seed1} + {args.seed2})")
 
-        out_pk = base_path / m / "Pk_matter"
-        out_pcurl = base_path / m / "Pk_curl"
+        out_pk = base_path / m / args.node / "Pk_matter"
+        out_pcurl = base_path / m / args.node / "Pk_curl"
 
         out_pk.mkdir(parents=True, exist_ok=True)
         out_pcurl.mkdir(parents=True, exist_ok=True)

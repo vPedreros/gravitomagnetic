@@ -27,8 +27,9 @@ def _write_synthetic_snapshot(pk_matter_dir, pk_curl_dir, idx, z, n_k=10):
 @pytest.fixture
 def synthetic_input(tmp_path):
     in_dir = tmp_path / "input"
-    pk_m = in_dir / "Pk_matter"
-    pk_c = in_dir / "Pk_curl"
+    node_dir = in_dir / "node_037"
+    pk_m = node_dir / "Pk_matter"
+    pk_c = node_dir / "Pk_curl"
     pk_m.mkdir(parents=True)
     pk_c.mkdir(parents=True)
     for i, z in enumerate([0.5, 1.0, 1.5]):
@@ -43,15 +44,16 @@ def test_c_ells_dir_created(synthetic_input, tmp_path):
     fake_args = MagicMock()
     fake_args.in_dir = str(synthetic_input)
     fake_args.out_dir = str(out_dir)
+    fake_args.node = "node_037"
     fake_args.z_source = 1.5
 
     with patch("angular_powerspec_z.parse_args", return_value=fake_args), \
          patch("vp_utils.C_ell_XY", return_value=1e-10):
         apz.main()
 
-    assert (out_dir / "C_ells").is_dir(), "C_ells/ subdirectory must be created"
-    assert (out_dir / "C_ells" / "ell_grid_z=1.5.npy").exists()
-    assert (out_dir / "C_ells" / "C_ells_XY_z=1.5.npy").exists()
+    assert (out_dir / fake_args.node / "C_ells").is_dir(), "C_ells/ subdirectory must be created"
+    assert (out_dir / fake_args.node / "C_ells" / "ell_grid_z=1.5.npy").exists()
+    assert (out_dir / fake_args.node / "C_ells" / "C_ells_XY_z=1.5.npy").exists()
 
 
 def test_snapshot_count_dynamic(synthetic_input, tmp_path):
@@ -61,6 +63,7 @@ def test_snapshot_count_dynamic(synthetic_input, tmp_path):
     fake_args = MagicMock()
     fake_args.in_dir = str(synthetic_input)
     fake_args.out_dir = str(out_dir)
+    fake_args.node = "node_037"
     fake_args.z_source = 1.5
 
     load_calls = []

@@ -79,16 +79,20 @@ def parse_args():
         choices=list(QUANTITIES),
         help="Which C_ell quantities to plot (one panel each).",
     )
+    parser.add_argument(
+        "--node", default="node_037", help="Number of the node"
+    )
     parser.add_argument("--show", action="store_true")
     return parser.parse_args()
 
 
 def load_cells(base, model, z_sources):
+    args = parse_args()
     """Return dict: {z: {'ell': ..., 'Phi': ..., 'kSZ': ..., 'B': ..., 'B_X_kSZ': ...}}."""
     result = {}
     for z in z_sources:
-        cell_path = base / model / "C_ells" / f"C_ells_XY_z={z}.npy"
-        ell_path = base / model / "C_ells" / f"ell_grid_z={z}.npy"
+        cell_path = base / model / args.node / "C_ells" / f"C_ells_XY_z={z}.npy"
+        ell_path = base / model / args.node /"C_ells" / f"ell_grid_z={z}.npy"
         if not cell_path.exists():
             print(f"  Warning: missing {cell_path}")
             continue
@@ -227,6 +231,7 @@ def main():
     base = Path(args.in_dir).expanduser()
     out_dir = Path(args.out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
+    out_dir = out_dir / args.node
 
     z_sources = sorted(args.z_sources)
 

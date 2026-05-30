@@ -44,21 +44,23 @@ def _write_seed_snap(snap_dir: Path, k, Pk, Pcurl, z: float):
 
 
 def _make_model_seeds(base: Path, model: str, seed1: str, seed2: str,
-                      n_snaps: int, k, pk1, pk2, pcurl1, pcurl2):
+                      n_snaps: int, k, pk1, pk2, pcurl1, pcurl2,
+                      node: str = "node_037"):
     for i in range(n_snaps):
-        _write_seed_snap(base / model / seed1 / f"snap_{i:03d}", k, pk1, pcurl1, z=float(i))
-        _write_seed_snap(base / model / seed2 / f"snap_{i:03d}", k, pk2, pcurl2, z=float(i))
+        _write_seed_snap(base / model / node / seed1 / f"snap_{i:03d}", k, pk1, pcurl1, z=float(i))
+        _write_seed_snap(base / model / node / seed2 / f"snap_{i:03d}", k, pk2, pcurl2, z=float(i))
 
 
-def _load_averaged(base: Path, model: str, snap_idx: int):
-    d_m = np.load(base / model / "Pk_matter" / f"{snap_idx:03d}.npy", allow_pickle=True).item()
-    d_c = np.load(base / model / "Pk_curl"   / f"{snap_idx:03d}.npy", allow_pickle=True).item()
+def _load_averaged(base: Path, model: str, snap_idx: int, node: str = "node_037"):
+    d_m = np.load(base / model / node / "Pk_matter" / f"{snap_idx:03d}.npy", allow_pickle=True).item()
+    d_c = np.load(base / model / node / "Pk_curl"   / f"{snap_idx:03d}.npy", allow_pickle=True).item()
     return d_m, d_c
 
 
-def _run_main(base_dir, models, seed1, seed2, h_orig=None, h_correct=None):
+def _run_main(base_dir, models, seed1, seed2, h_orig=None, h_correct=None,
+              node: str = "node_037"):
     argv = ["--base-dir", str(base_dir), "--models"] + models + \
-           ["--seed1", seed1, "--seed2", seed2]
+           ["--seed1", seed1, "--seed2", seed2, "--node", node]
     if h_orig is not None:
         argv += ["--h-orig", str(h_orig), "--h-correct", str(h_correct)]
     import sys as _sys
@@ -97,7 +99,7 @@ def test_k_grid_mismatch_raises(tmp_path):
     pk = np.ones(20)
 
     for seed, k in [("seed_A", k1), ("seed_B", k2)]:
-        _write_seed_snap(tmp_path / "lcdm" / seed / "snap_000", k, pk, pk, z=0.0)
+        _write_seed_snap(tmp_path / "lcdm" / "node_037" / seed / "snap_000", k, pk, pk, z=0.0)
 
     with pytest.raises(AssertionError):
         _run_main(tmp_path, ["lcdm"], "seed_A", "seed_B")
@@ -176,7 +178,7 @@ def test_h_correction_requires_both_flags(tmp_path):
 # Integration / regression tests — require output/ data
 # ---------------------------------------------------------------------------
 
-_HAS_DATA = Path("output/lcdm/Pk_matter/026.npy").exists()
+_HAS_DATA = Path("output/lcdm/node_037/Pk_matter/026.npy").exists()
 _skip_no_data = pytest.mark.skipif(not _HAS_DATA, reason="output/ data not present")
 
 _SNAP_LCDM = "026"
@@ -198,8 +200,8 @@ def test_k_grid_consistent_with_h():
     snaps = {"lcdm": _SNAP_LCDM, "frhs": _SNAP_MG, "ndgp": _SNAP_MG}
     k_over_h = {}
     for model, snap in snaps.items():
-        d = np.load(f"output/{model}/Pk_matter/{snap}.npy", allow_pickle=True).item()
-        pars = build_cosmo_params_from_file(f"output/{model}/parameters-usedvalues")
+        d = np.load(f"output/{model}/node_037/Pk_matter/{snap}.npy", allow_pickle=True).item()
+        pars = build_cosmo_params_from_file(f"output/{model}/node_037/parameters-usedvalues")
         k_over_h[model] = d["k"] / pars["h"]
 
     k_ref = k_over_h["lcdm"]
@@ -226,9 +228,9 @@ def test_pk_ratio_mg_lcdm_within_physical_range():
     Before the fix, frhs ratio was ~0.48, which is physically implausible and
     directly signals the wrong-seeds or wrong-h bug.
     """
-    lcdm = np.load(f"output/lcdm/Pk_matter/{_SNAP_LCDM}.npy", allow_pickle=True).item()
+    lcdm = np.load(f"output/lcdm/node_037/Pk_matter/{_SNAP_LCDM}.npy", allow_pickle=True).item()
     for model, snap in [("frhs", _SNAP_MG), ("ndgp", _SNAP_MG)]:
-        mg = np.load(f"output/{model}/Pk_matter/{snap}.npy", allow_pickle=True).item()
+        mg = np.load(f"output/{model}/node_037/Pk_matter/{snap}.npy", allow_pickle=True).item()
         ratio = mg["Pk"] / np.interp(mg["k"], lcdm["k"], lcdm["Pk"])
         assert np.all(ratio > 0.5), (
             f"{model}: Pk ratio dips below 0.5 (min={ratio.min():.3f}).  "
@@ -257,11 +259,11 @@ def test_averaged_output_matches_node39_seeds():
 
     for model in ["frhs", "ndgp"]:
         snap = _SNAP_MG
-        s1 = np.load(f"output/{model}/seed_2080_node39/snap_{snap}/Pk_m.npy")
-        s2 = np.load(f"output/{model}/seed_4257_node39/snap_{snap}/Pk_m.npy")
+        s1 = np.load(f"output/{model}/node_037/seed_2080/snap_{snap}/Pk_m.npy")
+        s2 = np.load(f"output/{model}/node_037/seed_4257/snap_{snap}/Pk_m.npy")
         expected = (s1 + s2) / 2 / h_ratio**3
 
-        averaged = np.load(f"output/{model}/Pk_matter/{snap}.npy",
+        averaged = np.load(f"output/{model}/node_037/Pk_matter/{snap}.npy",
                            allow_pickle=True).item()
 
         np.testing.assert_allclose(

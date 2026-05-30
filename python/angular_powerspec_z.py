@@ -26,8 +26,11 @@ def parse_args():
     parser.add_argument(
         "--out-dir",
         type=str,
-        default="outputs",
+        default="output",
         help="Output directory for .npy files.",
+    )
+    parser.add_argument(
+        "--node", default="node_037", help="Number of the node"
     )
     parser.add_argument(
         "--z_source", type=float, required=True, help="Maximum redshift for integration"
@@ -38,10 +41,11 @@ def parse_args():
 def main():
     args = parse_args()
     in_dir = Path(args.in_dir)
+    in_dir = in_dir / args.node
 
     out = Path(args.out_dir)
     out.mkdir(parents=True, exist_ok=True)
-    (out / "C_ells").mkdir(parents=True, exist_ok=True)
+    (out / args.node / "C_ells").mkdir(parents=True, exist_ok=True)
 
     z_list = []
     Pkm_list = []
@@ -156,8 +160,8 @@ def main():
             Pk_evol=True,
         )
 
-    np.save(out / f"C_ells/ell_grid_z={args.z_source}.npy", ell_grid)
-    np.save(out / f"C_ells/C_ells_XY_z={args.z_source}.npy", C_ells_XY)
+    np.save(out / args.node / f"C_ells/ell_grid_z={args.z_source}.npy", ell_grid)
+    np.save(out / args.node / f"C_ells/C_ells_XY_z={args.z_source}.npy", C_ells_XY)
 
 
 if __name__ == "__main__":

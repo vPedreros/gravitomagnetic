@@ -13,6 +13,7 @@ def parse_args():
     parser.add_argument("--z_source", type=float, required=True, help="Maximum redshift for integration")
     parser.add_argument("--survey", type=str, required=True, help="Name of the survey (LSST or Euclid)")
     parser.add_argument("--cmb-exp", type=str, required=True, help="Name of the CMB experiment (Planck or SO)")
+    parser.add_argument("--node", default="node_037", help="Number of the node")
     return parser.parse_args()
 
 args = parse_args()
@@ -20,6 +21,7 @@ args = parse_args()
 arcmin_to_rad = np.pi / (180*60) # Unit conversion
 
 base_path = Path(args.in_dir).expanduser()
+
 
 models = ['lcdm', 'frhs', 'ndgp']
 surveys = ['LSST', 'Euclid']
@@ -52,9 +54,9 @@ params_base = {
 }
 
 params_lcdm = params_base | {
-    'h': df_frhs['h'][0],
-    'Omega_cdm': df_frhs['Omega_m'][0] - Omega_b,
-    'A_s': df_frhs['A_s_2'][0],
+    'h': df_ndgp['h'][0],
+    'Omega_cdm': df_ndgp['Omega_m'][0] - Omega_b,
+    'A_s': df_ndgp['A_s_2'][0],
 }
 
 params_frhs = params_base | {
@@ -82,7 +84,7 @@ params_by_model = {
 }
 
 for m in models:
-    cache = base_path / m / "Cl_TT.npy"
+    cache = base_path / m / args.node / "Cl_TT.npy"
     if cache.exists():
         print(f"[{m}] Loading cached Cl_TT from {cache}")
         C_ell_TT[m] = np.load(cache)
@@ -156,7 +158,7 @@ def SNR(ell_list, C_ell_B_X_kSZ, C_ell_TT, C_ell_kappaWL, C_ell_kSZ, survey, exp
 def main():
     out_base = Path(args.out_dir).expanduser()
     for m in models:
-        path_C_ell = base_path / m
+        path_C_ell = base_path / m / args.node
 
         C_ell_XY = np.load(path_C_ell / 'C_ells' / f"C_ells_XY_z={args.z_source}.npy", allow_pickle=True).item()
         ell_grid = np.load(path_C_ell / 'C_ells' / f"ell_grid_z={args.z_source}.npy")
@@ -164,7 +166,7 @@ def main():
 
         signal_to_noise = SNR(ell_grid, C_ell_XY['B_X_kSZ'], C_ell_TT[m][ell_idx], C_ell_XY['Phi'], C_ell_XY['kSZ'], args.survey, args.cmb_exp)
 
-        out = out_base / m / "SNRs" / f"{args.survey}_{args.cmb_exp}"
+        out = out_base / m / args.node / "SNRs" / f"{args.survey}_{args.cmb_exp}"
         out.mkdir(parents=True, exist_ok=True)
 
         np.save(out / f"SNR_z={args.z_source}.npy", signal_to_noise)

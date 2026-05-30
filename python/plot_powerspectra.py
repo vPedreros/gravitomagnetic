@@ -47,14 +47,18 @@ def parse_args():
     parser.add_argument(
         "--show", action="store_true", help="Display figures interactively."
     )
+    parser.add_argument(
+        "--node", default="node_037", help="Number of the node"
+    )
     return parser.parse_args()
 
 
 def load_model_snapshots(base, model):
+    args = parse_args()
     """Return sorted list of dicts: [{z, k_m, Pk_m, k_curl, Pcurl}, ...]."""
     snaps = []
-    pk_dir = base / model / "Pk_matter"
-    pc_dir = base / model / "Pk_curl"
+    pk_dir = base / model / args.node / "Pk_matter"
+    pc_dir = base / model / args.node / "Pk_curl"
     for f in sorted(pk_dir.glob("*.npy")):
         dm = np.load(f, allow_pickle=True).item()
         dq = np.load(pc_dir / f.name, allow_pickle=True).item()
@@ -235,6 +239,7 @@ def main():
     base = Path(args.in_dir).expanduser()
     out_dir = Path(args.out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
+    out_dir = out_dir / args.node
 
     print("Loading snapshots...")
     data = {m: load_model_snapshots(base, m) for m in args.models}
