@@ -178,10 +178,10 @@ def test_h_correction_requires_both_flags(tmp_path):
 # Integration / regression tests — require output/ data
 # ---------------------------------------------------------------------------
 
-_HAS_DATA = Path("output/lcdm/node_037/Pk_matter/026.npy").exists()
+_HAS_DATA = Path("output/lcdm/node_037/Pk_matter/024.npy").exists()
 _skip_no_data = pytest.mark.skipif(not _HAS_DATA, reason="output/ data not present")
 
-_SNAP_LCDM = "026"
+_SNAP_LCDM = "024"
 _SNAP_MG   = "024"
 
 
@@ -255,7 +255,8 @@ def test_averaged_output_matches_node39_seeds():
     # so the stored Pk = seed_mean / (h_correct/h_orig)^3.  Apply the same factor
     # to the raw seed mean before comparing.
     h_orig, h_correct = 0.78052, 0.673
-    h_ratio = h_correct / h_orig
+    # Now, that simulations use correct parameters, this test is done with h_ratio = 1
+    h_ratio = 1.  # h_correct / h_orig
 
     for model in ["frhs", "ndgp"]:
         snap = _SNAP_MG
