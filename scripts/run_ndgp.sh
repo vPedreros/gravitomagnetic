@@ -11,7 +11,7 @@
 BASE="/cosma8/data/dp203/bl267/Data/MG_Arepo_runs/FORGE-BRIDGE/BRIDGE/Particle_Snapshots/L500_N1024_Seed_2080_Node_036_Omega_m_0.25453_S8_0.702_h_0.66918_H0rc_0.31311535_sigma8_0.76212/"
 OUTROOT="/cosma7/data/dp203/dc-pedr3/gravitomagnetic/output/ndgp/node_036/seed_2080"
 
-for snap in $(seq 0 24); do
+for snap in $(seq 0 26); do
     out_dir="${OUTROOT}/snap_$(printf '%03d' "$snap")"
 
     vp_param="${BASE}/parameters-usedvalues"
@@ -31,7 +31,7 @@ done
 BASE="/cosma8/data/dp203/bl267/Data/MG_Arepo_runs/FORGE-BRIDGE/BRIDGE/Particle_Snapshots/L500_N1024_Seed_4257_Node_036_Omega_m_0.25453_S8_0.702_h_0.66918_H0rc_0.31311535_sigma8_0.76212/"
 OUTROOT="/cosma7/data/dp203/dc-pedr3/gravitomagnetic/output/ndgp/node_036/seed_4257"
 
-for snap in $(seq 0 24); do
+for snap in $(seq 0 26); do
     out_dir="${OUTROOT}/snap_$(printf '%03d' "$snap")"
 
     vp_param="${BASE}/parameters-usedvalues"
