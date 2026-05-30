@@ -1,7 +1,7 @@
 PYTHON ?= python
 IN_DIR ?= output
 IMG_DIR ?= imgs
-VP_PARAMS_FILE ?= output/lcdm/parameters-usedvalues
+VP_PARAMS_FILE ?= output/lcdm/node_037/parameters-usedvalues
 CELL_QUANTITIES ?= Phi B kSZ B_X_kSZ
 
 .PHONY: test plots plot-powerspec plot-cells plot-cells-cross plot-snr plot-snr-cumulative-ell plot-snr-colorbar plot-snr-colorbar-so plot-snr-colorbar-planck
