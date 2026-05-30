@@ -86,13 +86,12 @@ def parse_args():
     return parser.parse_args()
 
 
-def load_cells(base, model, z_sources):
-    args = parse_args()
+def load_cells(base, model, z_sources, node):
     """Return dict: {z: {'ell': ..., 'Phi': ..., 'kSZ': ..., 'B': ..., 'B_X_kSZ': ...}}."""
     result = {}
     for z in z_sources:
-        cell_path = base / model / args.node / "C_ells" / f"C_ells_XY_z={z}.npy"
-        ell_path = base / model / args.node /"C_ells" / f"ell_grid_z={z}.npy"
+        cell_path = base / model / node / "C_ells" / f"C_ells_XY_z={z}.npy"
+        ell_path = base / model / node / "C_ells" / f"ell_grid_z={z}.npy"
         if not cell_path.exists():
             print(f"  Warning: missing {cell_path}")
             continue
@@ -193,11 +192,18 @@ def plot_ratio(data, z_sources, models, quantities, out_dir, show):
                 d = data[model][z]
                 d_lcdm = data["lcdm"][z]
                 lcdm_val = np.interp(d["ell"], d_lcdm["ell"], np.abs(d_lcdm[qty]))
-                # _compute_C_ell returns 0 at ells outside the valid k-range,
-                # which would produce inf/NaN here. NaN out those points so the
-                # plot draws a gap instead of a meaningless spike.
+                mg_val = np.abs(d[qty])
+                # Mask ells where either model's C_ell has dropped below 0.1% of
+                # its peak — these tail values (beyond kmax of the k-grid) are
+                # unreliable and produce spurious spikes in the ratio.
+                lcdm_thresh = 1e-3 * np.nanmax(lcdm_val)
+                mg_thresh = 1e-3 * np.nanmax(mg_val)
                 with np.errstate(divide="ignore", invalid="ignore"):
-                    ratio = np.where(lcdm_val > 0, np.abs(d[qty]) / lcdm_val, np.nan)
+                    ratio = np.where(
+                        (lcdm_val > lcdm_thresh) & (mg_val > mg_thresh),
+                        mg_val / lcdm_val,
+                        np.nan,
+                    )
                 ax.semilogx(
                     d["ell"], ratio, ls=MODEL_LS[model], color=z_colors[z], alpha=0.9
                 )
@@ -230,13 +236,13 @@ def main():
 
     base = Path(args.in_dir).expanduser()
     out_dir = Path(args.out_dir)
-    out_dir.mkdir(parents=True, exist_ok=True)
+    (out_dir / args.node).mkdir(parents=True, exist_ok=True)
     out_dir = out_dir / args.node
 
     z_sources = sorted(args.z_sources)
 
     print("Loading C_ell data...")
-    data = {m: load_cells(base, m, z_sources) for m in args.models}
+    data = {m: load_cells(base, m, z_sources, args.node) for m in args.models}
 
     plot_absolute(data, z_sources, args.models, args.quantities, out_dir, args.show)
     plot_ratio(data, z_sources, args.models, args.quantities, out_dir, args.show)

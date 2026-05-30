@@ -255,8 +255,7 @@ def test_averaged_output_matches_node39_seeds():
     # so the stored Pk = seed_mean / (h_correct/h_orig)^3.  Apply the same factor
     # to the raw seed mean before comparing.
     h_orig, h_correct = 0.78052, 0.673
-    # Now, that simulations use correct parameters, this test is done with h_ratio = 1
-    h_ratio = 1.  # h_correct / h_orig
+    h_ratio = h_correct / h_orig  # 0.8623
 
     for model in ["frhs", "ndgp"]:
         snap = _SNAP_MG

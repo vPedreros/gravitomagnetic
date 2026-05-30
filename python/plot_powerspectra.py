@@ -53,12 +53,11 @@ def parse_args():
     return parser.parse_args()
 
 
-def load_model_snapshots(base, model):
-    args = parse_args()
+def load_model_snapshots(base, model, node):
     """Return sorted list of dicts: [{z, k_m, Pk_m, k_curl, Pcurl}, ...]."""
     snaps = []
-    pk_dir = base / model / args.node / "Pk_matter"
-    pc_dir = base / model / args.node / "Pk_curl"
+    pk_dir = base / model / node / "Pk_matter"
+    pc_dir = base / model / node / "Pk_curl"
     for f in sorted(pk_dir.glob("*.npy")):
         dm = np.load(f, allow_pickle=True).item()
         dq = np.load(pc_dir / f.name, allow_pickle=True).item()
@@ -181,16 +180,25 @@ def plot_ratio(data, z_targets, models, out_dir, show):
             color = z_colors[z_target]
             ls = MODEL_LS[model]
 
-            # Interpolate LCDM onto the model's k grid
-            ratio_m = snap["Pk_m"] / np.interp(
-                snap["k_m"], snap_lcdm["k_m"], snap_lcdm["Pk_m"]
-            )
-            ratio_c = snap["Pcurl"] / np.interp(
-                snap["k_curl"], snap_lcdm["k_curl"], snap_lcdm["Pcurl"]
+            # Restrict to common k range to avoid np.interp clipping artifacts
+            k_lo_m = max(snap["k_m"][0], snap_lcdm["k_m"][0])
+            k_hi_m = min(snap["k_m"][-1], snap_lcdm["k_m"][-1])
+            mask_m = (snap["k_m"] >= k_lo_m) & (snap["k_m"] <= k_hi_m)
+            k_m = snap["k_m"][mask_m]
+            ratio_m = snap["Pk_m"][mask_m] / np.interp(
+                k_m, snap_lcdm["k_m"], snap_lcdm["Pk_m"]
             )
 
-            ax_m.semilogx(snap["k_m"], ratio_m, ls=ls, color=color, alpha=0.9)
-            ax_curl.semilogx(snap["k_curl"], ratio_c, ls=ls, color=color, alpha=0.9)
+            k_lo_c = max(snap["k_curl"][0], snap_lcdm["k_curl"][0])
+            k_hi_c = min(snap["k_curl"][-1], snap_lcdm["k_curl"][-1])
+            mask_c = (snap["k_curl"] >= k_lo_c) & (snap["k_curl"] <= k_hi_c)
+            k_c = snap["k_curl"][mask_c]
+            ratio_c = snap["Pcurl"][mask_c] / np.interp(
+                k_c, snap_lcdm["k_curl"], snap_lcdm["Pcurl"]
+            )
+
+            ax_m.semilogx(k_m, ratio_m, ls=ls, color=color, alpha=0.9)
+            ax_curl.semilogx(k_c, ratio_c, ls=ls, color=color, alpha=0.9)
 
             if z_target == z_targets[0]:
                 model_handles.append(
@@ -238,11 +246,11 @@ def main():
 
     base = Path(args.in_dir).expanduser()
     out_dir = Path(args.out_dir)
-    out_dir.mkdir(parents=True, exist_ok=True)
+    (out_dir / args.node).mkdir(parents=True, exist_ok=True)
     out_dir = out_dir / args.node
 
     print("Loading snapshots...")
-    data = {m: load_model_snapshots(base, m) for m in args.models}
+    data = {m: load_model_snapshots(base, m, args.node) for m in args.models}
 
     z_targets = sorted(args.redshifts)
 

@@ -55,10 +55,9 @@ def parse_args():
     return parser.parse_args()
 
 
-def load_snr_data(base, model, combo):
-    args = parse_args()
+def load_snr_data(base, model, combo, node):
     """Return (z_sources sorted, cumulative_SNR array)."""
-    snr_dir = base / model / args.node / "SNRs" / combo
+    snr_dir = base / model / node / "SNRs" / combo
     z_vals, cumsnr = [], []
     for f in sorted(snr_dir.glob("SNR_z=*.npy")):
         z = float(f.stem.replace("SNR_z=", ""))
@@ -69,20 +68,19 @@ def load_snr_data(base, model, combo):
     return np.array(z_vals)[order], np.array(cumsnr)[order]
 
 
-def load_snr_per_ell(base, model, combo, z_ref):
-    args = parse_args()
+def load_snr_per_ell(base, model, combo, z_ref, node):
     """Return (ell_grid, snr_ell) at the closest available z_source."""
-    snr_dir = base / model / args.node / "SNRs" / combo
+    snr_dir = base / model / node / "SNRs" / combo
     files = sorted(snr_dir.glob("SNR_z=*.npy"))
     z_avail = [float(f.stem.replace("SNR_z=", "")) for f in files]
     idx = int(np.argmin(np.abs(np.array(z_avail) - z_ref)))
     snr_ell = np.load(files[idx])
-    ell_path = base / model / args.node / "C_ells" / f"ell_grid_z={z_avail[idx]}.npy"
+    ell_path = base / model / node / "C_ells" / f"ell_grid_z={z_avail[idx]}.npy"
     ell = np.load(ell_path)
     return ell, snr_ell, z_avail[idx]
 
 
-def plot_cumulative_snr(base, models, out_dir, show):
+def plot_cumulative_snr(base, models, out_dir, show, node):
     """2×2 grid: one panel per survey×experiment, cumulative SNR vs z_source."""
     fig, axes = plt.subplots(2, 2, figsize=(9, 7), sharex=True)
     axes_flat = axes.flatten()
@@ -97,7 +95,7 @@ def plot_cumulative_snr(base, models, out_dir, show):
     for ax, combo in zip(axes_flat, COMBOS):
         for model in models:
             try:
-                z_arr, cumsnr = load_snr_data(base, model, combo)
+                z_arr, cumsnr = load_snr_data(base, model, combo, node)
             except (FileNotFoundError, ValueError):
                 continue
             ax.plot(z_arr, cumsnr,
@@ -119,7 +117,7 @@ def plot_cumulative_snr(base, models, out_dir, show):
     plt.close(fig)
 
 
-def plot_snr_per_ell(base, models, z_ref, out_dir, show):
+def plot_snr_per_ell(base, models, z_ref, out_dir, show, node):
     """2×2 grid: per-ell SNR at z_ref for each survey×experiment."""
     fig, axes = plt.subplots(2, 2, figsize=(9, 7), sharex=True)
     axes_flat = axes.flatten()
@@ -135,7 +133,7 @@ def plot_snr_per_ell(base, models, z_ref, out_dir, show):
     for ax, combo in zip(axes_flat, COMBOS):
         for model in models:
             try:
-                ell, snr_ell, z_used = load_snr_per_ell(base, model, combo, z_ref)
+                ell, snr_ell, z_used = load_snr_per_ell(base, model, combo, z_ref, node)
             except (FileNotFoundError, ValueError):
                 continue
             ax.semilogx(ell, snr_ell,
@@ -158,7 +156,7 @@ def plot_snr_per_ell(base, models, z_ref, out_dir, show):
     plt.close(fig)
 
 
-def plot_snr_cumulative_vs_ell(base, models, z_ref, out_dir, show):
+def plot_snr_cumulative_vs_ell(base, models, z_ref, out_dir, show, node):
     """2x2 grid: cumulative SNR up to ell_max as a function of ell_max, at z_ref.
 
         SNR(<ell_max) = sqrt(sum_{ell <= ell_max} SNR_ell^2)
@@ -175,7 +173,7 @@ def plot_snr_cumulative_vs_ell(base, models, z_ref, out_dir, show):
     for ax, combo in zip(axes_flat, COMBOS):
         for model in models:
             try:
-                ell, snr_ell, z_used = load_snr_per_ell(base, model, combo, z_ref)
+                ell, snr_ell, z_used = load_snr_per_ell(base, model, combo, z_ref, node)
             except (FileNotFoundError, ValueError):
                 continue
             cum = np.sqrt(np.cumsum(snr_ell ** 2))
@@ -198,13 +196,12 @@ def plot_snr_cumulative_vs_ell(base, models, z_ref, out_dir, show):
     plt.close(fig)
 
 
-def plot_snr_per_ell_colorbar(base, models, cmb_exp, out_dir, show):
+def plot_snr_per_ell_colorbar(base, models, cmb_exp, out_dir, show, node):
     """1×N grid (one panel per model) of per-ell SNR vs ell, coloured by z_s.
 
     Both Euclid (solid) and LSST (dashed) are overlaid in each panel for the
     chosen CMB experiment.  A shared colorbar shows the source redshift.
     """
-    args = parse_args()
     n = len(models)
     fig, axes = plt.subplots(1, n, figsize=(6 * n, 5), sharey=True, squeeze=False)
     axes = axes[0]
@@ -218,8 +215,8 @@ def plot_snr_per_ell_colorbar(base, models, cmb_exp, out_dir, show):
             color = cmap(norm(z))
             for survey, ls in [("Euclid", "-"), ("LSST", "--")]:
                 combo = f"{survey}_{cmb_exp}"
-                snr_path = base / model / args.node / "SNRs" / combo / f"SNR_z={z}.npy"
-                ell_path = base / model / args.node / "C_ells" / f"ell_grid_z={z}.npy"
+                snr_path = base / model / node / "SNRs" / combo / f"SNR_z={z}.npy"
+                ell_path = base / model / node / "C_ells" / f"ell_grid_z={z}.npy"
                 if not snr_path.exists() or not ell_path.exists():
                     continue
                 snr_ell = np.load(snr_path)
@@ -257,18 +254,18 @@ def main():
 
     base = Path(args.in_dir).expanduser()
     out_dir = Path(args.out_dir)
-    out_dir.mkdir(parents=True, exist_ok=True)
+    (out_dir / args.node).mkdir(parents=True, exist_ok=True)
     out_dir = out_dir / args.node
 
     if "cumulative" in args.only:
-        plot_cumulative_snr(base, args.models, out_dir, args.show)
+        plot_cumulative_snr(base, args.models, out_dir, args.show, args.node)
     if "per-ell" in args.only:
-        plot_snr_per_ell(base, args.models, args.z_ref, out_dir, args.show)
+        plot_snr_per_ell(base, args.models, args.z_ref, out_dir, args.show, args.node)
     if "cumulative-ell" in args.only:
-        plot_snr_cumulative_vs_ell(base, args.models, args.z_ref, out_dir, args.show)
+        plot_snr_cumulative_vs_ell(base, args.models, args.z_ref, out_dir, args.show, args.node)
     if "colorbar" in args.only:
         for exp in args.colorbar_experiments:
-            plot_snr_per_ell_colorbar(base, args.models, exp, out_dir, args.show)
+            plot_snr_per_ell_colorbar(base, args.models, exp, out_dir, args.show, args.node)
 
 
 if __name__ == "__main__":

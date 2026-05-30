@@ -31,8 +31,8 @@ VP_PARAMS_FILE : path to the Arepo parameters-usedvalues file for the
     Example::
 
         export VP_PARAMS_FILE=output/frhs/parameters-usedvalues
-        python powerspec.py --in-dir output/frhs/seed_2080/snap_000 \\
-                            --out-dir output/frhs/seed_2080/snap_000
+        python powerspec.py --in-dir output/frhs/node_037/seed_2080/snap_000 \\
+                            --out-dir output/frhs/node_037/seed_2080/snap_000
 """
 
 import argparse
