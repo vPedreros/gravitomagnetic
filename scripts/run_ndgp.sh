@@ -1,17 +1,49 @@
 #!/bin/bash -l
+
+#SBATCH -J ndgp_seed_036
+#SBATCH --ntasks 16
 #SBATCH -p cosma7 
 #SBATCH -A dp203
-#SBATCH -t 2:00:00
-#SBATCH --ntasks 8
+#SBATCH -t 8:00:00
+#SBATCH --mail-type=END
+#SBATCH --mail-user=vicente.pedreros@ug.uchile.cl
 
-BASE="/cosma8/data/dp203/bl267/Data/MG_Arepo_runs/FORGE-BRIDGE/BRIDGE/Particle_Snapshots/L500_N1024_Seed_4257_Node_006_Omega_m_0.35339_S8_0.78021_h_0.78052_H0rc_0.5646738_sigma8_0.71886/"
-OUTROOT="/cosma7/data/dp203/dc-pedr3/gravitomagnetic/output/ndgp/seed_4257"
+BASE="/cosma8/data/dp203/bl267/Data/MG_Arepo_runs/FORGE-BRIDGE/BRIDGE/Particle_Snapshots/L500_N1024_Seed_2080_Node_036_Omega_m_0.25453_S8_0.702_h_0.66918_H0rc_0.31311535_sigma8_0.76212/"
+OUTROOT="/cosma7/data/dp203/dc-pedr3/gravitomagnetic/output/ndgp/node_036/seed_2080"
 
-for snap in $(seq 24 27); do
+for snap in $(seq 0 24); do
     out_dir="${OUTROOT}/snap_$(printf '%03d' "$snap")"
-  
+
+    vp_param="${BASE}/parameters-usedvalues"
+    export VP_PARAMS_FILE="$vp_param"
+
     python3 gravitomagnetic/python/read_snap.py --base-path "$BASE" --out-dir "$out_dir" --snap-num $snap 
-    python3 gravitomagnetic/python/fields.py --in-dir "$out_dir" --out-dir "$out_dir" --verbose True --threads 8
-    python3 gravitomagnetic/python/powerspec.py --in-dir "$out_dir" --out-dir "$out_dir" --verbose True --threads 8
+    python3 gravitomagnetic/python/fields.py --in-dir "$out_dir" --out-dir "$out_dir" --threads 16
+    python3 gravitomagnetic/python/powerspec.py --in-dir "$out_dir" --out-dir "$out_dir" --threads 16
+
+    rm -f "${out_dir}/Coordinates.npy"
+    rm -f "${out_dir}/Velocities.npy"
+    rm -f "${out_dir}/delta.npy"
+    rm -f "${out_dir}"/momentum*.npy
+
+done
+
+BASE="/cosma8/data/dp203/bl267/Data/MG_Arepo_runs/FORGE-BRIDGE/BRIDGE/Particle_Snapshots/L500_N1024_Seed_4257_Node_036_Omega_m_0.25453_S8_0.702_h_0.66918_H0rc_0.31311535_sigma8_0.76212/"
+OUTROOT="/cosma7/data/dp203/dc-pedr3/gravitomagnetic/output/ndgp/node_036/seed_4257"
+
+for snap in $(seq 0 24); do
+    out_dir="${OUTROOT}/snap_$(printf '%03d' "$snap")"
+
+    vp_param="${BASE}/parameters-usedvalues"
+    export VP_PARAMS_FILE="$vp_param"
+
+    python3 gravitomagnetic/python/read_snap.py --base-path "$BASE" --out-dir "$out_dir" --snap-num $snap 
+    python3 gravitomagnetic/python/fields.py --in-dir "$out_dir" --out-dir "$out_dir" --threads 16
+    python3 gravitomagnetic/python/powerspec.py --in-dir "$out_dir" --out-dir "$out_dir" --threads 16
+
+    rm -f "${out_dir}/Coordinates.npy"
+    rm -f "${out_dir}/Velocities.npy"
+    rm -f "${out_dir}/delta.npy"
+    rm -f "${out_dir}"/momentum*.npy
 
 done
