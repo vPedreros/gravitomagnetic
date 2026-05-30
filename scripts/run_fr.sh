@@ -17,9 +17,9 @@ for snap in $(seq 0 26); do
     vp_param="${BASE}/parameters-usedvalues"
     export VP_PARAMS_FILE="$vp_param"
 
-    python3 /cosma7/data/dp203/dc-pedr3/gravitomagnetic/python/read_snap.py --base-path "$BASE" --out-dir "$out_dir" --snap-num $snap 
-    python3 /cosma7/data/dp203/dc-pedr3/gravitomagnetic/python/fields.py --in-dir "$out_dir" --out-dir "$out_dir" --threads 16
-    python3 /cosma7/data/dp203/dc-pedr3/gravitomagnetic/python/powerspec.py --in-dir "$out_dir" --out-dir "$out_dir" --threads 16
+    python3 gravitomagnetic/python/read_snap.py --base-path "$BASE" --out-dir "$out_dir" --snap-num $snap 
+    python3 gravitomagnetic/python/fields.py --in-dir "$out_dir" --out-dir "$out_dir" --threads 16
+    python3 gravitomagnetic/python/powerspec.py --in-dir "$out_dir" --out-dir "$out_dir" --threads 16
 
     rm -f "${out_dir}/Coordinates.npy"
     rm -f "${out_dir}/Velocities.npy"
@@ -37,9 +37,9 @@ for snap in $(seq 0 26); do
     vp_param="${BASE}/parameters-usedvalues"
     export VP_PARAMS_FILE="$vp_param"
 
-    python3 /cosma7/data/dp203/dc-pedr3/gravitomagnetic/python/read_snap.py --base-path "$BASE" --out-dir "$out_dir" --snap-num $snap 
-    python3 /cosma7/data/dp203/dc-pedr3/gravitomagnetic/python/fields.py --in-dir "$out_dir" --out-dir "$out_dir" --threads 16
-    python3 /cosma7/data/dp203/dc-pedr3/gravitomagnetic/python/powerspec.py --in-dir "$out_dir" --out-dir "$out_dir" --threads 16
+    python3 gravitomagnetic/python/read_snap.py --base-path "$BASE" --out-dir "$out_dir" --snap-num $snap 
+    python3 gravitomagnetic/python/fields.py --in-dir "$out_dir" --out-dir "$out_dir" --threads 16
+    python3 gravitomagnetic/python/powerspec.py --in-dir "$out_dir" --out-dir "$out_dir" --threads 16
 
     rm -f "${out_dir}/Coordinates.npy"
     rm -f "${out_dir}/Velocities.npy"
