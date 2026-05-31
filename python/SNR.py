@@ -13,7 +13,7 @@ def parse_args():
     parser.add_argument("--z_source", type=float, required=True, help="Maximum redshift for integration")
     parser.add_argument("--survey", type=str, required=True, help="Name of the survey (LSST or Euclid)")
     parser.add_argument("--cmb-exp", type=str, required=True, help="Name of the CMB experiment (Planck or SO)")
-    parser.add_argument("--node", default="node_037", help="Number of the node")
+    parser.add_argument("--node", default="node_004", help="Number of the node")
     return parser.parse_args()
 
 args = parse_args()

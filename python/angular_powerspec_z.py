@@ -30,7 +30,7 @@ def parse_args():
         help="Output directory for .npy files.",
     )
     parser.add_argument(
-        "--node", default="node_037", help="Number of the node"
+        "--node", default="node_004", help="Number of the node"
     )
     parser.add_argument(
         "--z_source", type=float, required=True, help="Maximum redshift for integration"

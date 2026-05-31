@@ -50,7 +50,7 @@ def parse_args():
                         help="Which plot families to produce.")
     parser.add_argument("--show", action="store_true")
     parser.add_argument(
-        "--node", default="node_037", help="Number of the node"
+        "--node", default="node_004", help="Number of the node"
     )
     return parser.parse_args()
 

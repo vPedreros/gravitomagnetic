@@ -48,7 +48,7 @@ def parse_args():
         "--show", action="store_true", help="Display figures interactively."
     )
     parser.add_argument(
-        "--node", default="node_037", help="Number of the node"
+        "--node", default="node_004", help="Number of the node"
     )
     return parser.parse_args()
 

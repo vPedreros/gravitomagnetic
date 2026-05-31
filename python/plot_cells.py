@@ -80,7 +80,7 @@ def parse_args():
         help="Which C_ell quantities to plot (one panel each).",
     )
     parser.add_argument(
-        "--node", default="node_037", help="Number of the node"
+        "--node", default="node_004", help="Number of the node"
     )
     parser.add_argument("--show", action="store_true")
     return parser.parse_args()
