@@ -1,14 +1,9 @@
 .DS_Store
 __pycache__/
 .pytest_cache/
-build/
 Pylians3/
-snapdir_000/
-outputs/
-outputs_2/
-gpt/
-test_out/
 cosma_powerspec/
-notebooks/compare_power_spectra.ipynb
-notebooks/compare_sim_cosma_class.ipynb
+notebooks/
 output/
+old_output/
+biblio.bib
