@@ -45,7 +45,7 @@ def main():
 
     out = Path(args.out_dir)
     out.mkdir(parents=True, exist_ok=True)
-    (out / "C_ells").mkdir(parents=True, exist_ok=True)
+    (out / args.node / "C_ells").mkdir(parents=True, exist_ok=True)
 
     z_list = []
     Pkm_list = []
@@ -160,8 +160,8 @@ def main():
             Pk_evol=True,
         )
 
-    np.save(out / f"C_ells/ell_grid_z={args.z_source}.npy", ell_grid)
-    np.save(out / f"C_ells/C_ells_XY_z={args.z_source}.npy", C_ells_XY)
+    np.save(out / args.node / f"C_ells/ell_grid_z={args.z_source}.npy", ell_grid)
+    np.save(out / args.node / f"C_ells/C_ells_XY_z={args.z_source}.npy", C_ells_XY)
 
 
 if __name__ == "__main__":
