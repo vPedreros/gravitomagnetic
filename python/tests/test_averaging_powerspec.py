@@ -201,7 +201,7 @@ def test_k_grid_consistent_with_h():
     k_over_h = {}
     for model, snap in snaps.items():
         d = np.load(f"output/{model}/node_037/Pk_matter/{snap}.npy", allow_pickle=True).item()
-        pars = build_cosmo_params_from_file(f"output/{model}/node_037/parameters-usedvalues")
+        pars = build_cosmo_params_from_file(f"output/{model}/node_037/seed_2080/parameters-usedvalues")
         k_over_h[model] = d["k"] / pars["h"]
 
     k_ref = k_over_h["lcdm"]
