@@ -30,8 +30,8 @@ experiments = ['Planck', 'SO']
 col_names_frhs = ['Omega_m', 'S8', 'h', '|f_R0|', 'sigma8', 'A_s', 'B0']
 col_names_ndgp = ['Omega_m', 'S8', 'h', 'H0rc', 'sigma8', 'A_s', 'B0']
 
-df_frhs = pd.read_csv(base_path / 'frhs/Nodes_Omm-S8-h-fR0-sigma8-As-B0_LHCrandommaximin_Seed1_Nodes50_Dim4_AddFidTrue_extended.dat', sep=r'\s+', skiprows=1, names=col_names_frhs, skipfooter=2, engine='python')
-df_ndgp = pd.read_csv(base_path / 'ndgp/Nodes_Omm-S8-h-H0rc-sigma8-As-B0_LHCrandommaximin_Seed1_Nodes50_Dim4_AddFidTrue_extended_modified.dat', sep=r'\s+', skiprows=1, names=col_names_ndgp, skipfooter=2, engine='python')
+df_frhs = pd.read_csv('parameters/Nodes_Omm-S8-h-fR0-sigma8-As-B0_LHCrandommaximin_Seed1_Nodes50_Dim4_AddFidTrue_extended.dat', sep=r'\s+', skiprows=1, names=col_names_frhs, skipfooter=2, engine='python')
+df_ndgp = pd.read_csv('parameters/Nodes_Omm-S8-h-H0rc-sigma8-As-B0_LHCrandommaximin_Seed1_Nodes50_Dim4_AddFidTrue_extended_modified.dat', sep=r'\s+', skiprows=1, names=col_names_ndgp)
 
 df_frhs[['A_s_1', 'A_s_2']] = df_frhs['A_s'].str.split('/', expand=True).astype(float)
 df_ndgp[['A_s_1', 'A_s_2']] = df_ndgp['A_s'].str.split('/', expand=True).astype(float)
@@ -42,6 +42,7 @@ df_ndgp = df_ndgp.drop(columns=['A_s'])
 Omega_b = 0.049199
 n_s = 0.9652
 
+node_n = int(args.node[-3:])
 # Find C_ell_TT from CLASS for the different models
 ## Cosmological parameters
 params_base = {
@@ -54,21 +55,21 @@ params_base = {
 }
 
 params_lcdm = params_base | {
-    'h': df_ndgp['h'][0],
-    'Omega_cdm': df_ndgp['Omega_m'][0] - Omega_b,
-    'A_s': df_ndgp['A_s_2'][0],
+    'h': df_ndgp['h'][node_n],
+    'Omega_cdm': df_ndgp['Omega_m'][node_n] - Omega_b,
+    'A_s': df_ndgp['A_s_2'][node_n],
 }
 
 params_frhs = params_base | {
-    'h': df_frhs['h'][6],
-    'Omega_cdm': df_frhs['Omega_m'][6] - Omega_b,
-    'A_s': df_frhs['A_s_2'][6],
+    'h': df_frhs['h'][node_n],
+    'Omega_cdm': df_frhs['Omega_m'][node_n] - Omega_b,
+    'A_s': df_frhs['A_s_2'][node_n],
 }
 
 params_ndgp = params_base | {
-    'h': df_ndgp['h'][6],
-    'Omega_cdm': df_ndgp['Omega_m'][6] - Omega_b,
-    'A_s': df_ndgp['A_s_2'][6],
+    'h': df_ndgp['h'][node_n],
+    'Omega_cdm': df_ndgp['Omega_m'][node_n] - Omega_b,
+    'A_s': df_ndgp['A_s_2'][node_n],
 }
 
 
