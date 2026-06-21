@@ -122,11 +122,11 @@ def main():
         if apply_h_correction:
             h_ratio = args.h_correct / args.h_orig
             print(
-                f"computing {m} ({args.seed1} + {args.seed2}), h correction {args.h_orig} → {args.h_correct}"
+                f"computing {m} {args.node} ({args.seed1} + {args.seed2}), h correction {args.h_orig} → {args.h_correct}"
             )
         else:
             h_ratio = None
-            print(f"computing {m} ({args.seed1} + {args.seed2})")
+            print(f"computing {m} {args.node} ({args.seed1} + {args.seed2})")
 
         out_pk = base_path / m / args.node / "Pk_matter"
         out_pcurl = base_path / m / args.node / "Pk_curl"
