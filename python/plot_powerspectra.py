@@ -246,8 +246,8 @@ def main():
 
     base = Path(args.in_dir).expanduser()
     out_dir = Path(args.out_dir)
-    (out_dir / args.node).mkdir(parents=True, exist_ok=True)
-    out_dir = out_dir / args.node
+    (out_dir).mkdir(parents=True, exist_ok=True)
+    out_dir = out_dir
 
     print("Loading snapshots...")
     data = {m: load_model_snapshots(base, m, args.node) for m in args.models}

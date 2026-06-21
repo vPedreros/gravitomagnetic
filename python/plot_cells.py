@@ -236,8 +236,8 @@ def main():
 
     base = Path(args.in_dir).expanduser()
     out_dir = Path(args.out_dir)
-    (out_dir / args.node).mkdir(parents=True, exist_ok=True)
-    out_dir = out_dir / args.node
+    (out_dir).mkdir(parents=True, exist_ok=True)
+    out_dir = out_dir
 
     z_sources = sorted(args.z_sources)
 
