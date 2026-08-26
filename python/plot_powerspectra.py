@@ -17,7 +17,7 @@ import matplotlib.colors as mcolors
 import matplotlib.pyplot as plt
 import numpy as np
 
-from plot_utils import MODEL_LABELS, MODEL_LS, MODEL_COLORS, apply_style
+from plot_utils import MODEL_LABELS, MODEL_LS, MODEL_COLORS, apply_style, set_size
 
 
 def parse_args():
@@ -89,7 +89,7 @@ def plot_absolute(data, z_targets, models, out_dir, show):
     """Figure 1: P_m(k) and P_curl(k) for each model at each target redshift."""
     z_colors = redshift_cmap(z_targets)
 
-    fig, axes = plt.subplots(1, 2, figsize=(8, 4), sharey=False)
+    fig, axes = plt.subplots(1, 2, figsize=set_size(columns=2, subplots=(1, 2)), sharey=False)
     ax_m, ax_curl = axes
 
     # Track what goes in the legend
@@ -161,7 +161,7 @@ def plot_ratio(data, z_targets, models, out_dir, show):
         print("Skipping ratio plot — no non-LCDM models selected.")
         return
 
-    fig, axes = plt.subplots(1, 2, figsize=(8, 4), sharey=False)
+    fig, axes = plt.subplots(1, 2, figsize=set_size(columns=2, subplots=(1, 2)), sharey=False)
     ax_m, ax_curl = axes
 
     for m in axes:
@@ -242,7 +242,7 @@ def plot_ratio(data, z_targets, models, out_dir, show):
 
 def main():
     args = parse_args()
-    apply_style()
+    apply_style(columns=2)
 
     base = Path(args.in_dir).expanduser()
     out_dir = Path(args.out_dir)

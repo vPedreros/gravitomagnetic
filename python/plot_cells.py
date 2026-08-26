@@ -16,7 +16,7 @@ from pathlib import Path
 import matplotlib.colors as mcolors
 import matplotlib.pyplot as plt
 import numpy as np
-from plot_utils import MODEL_COLORS, MODEL_LABELS, MODEL_LS, apply_style
+from plot_utils import MODEL_COLORS, MODEL_LABELS, MODEL_LS, apply_style, set_size
 
 QUANTITIES = ("Phi", "B", "kSZ", "B_X_kSZ")
 
@@ -108,9 +108,23 @@ def z_colormap(z_values):
 
 
 def _make_axes(n_panels):
-    """Layout for N panels: 1xN row (N<=4 covers our use case)."""
-    fig, axes = plt.subplots(1, n_panels, figsize=(4 * n_panels, 4), squeeze=False)
-    return fig, axes[0]
+    """Layout for N panels: 2x2 grid for 4 panels, or 1xN row for N<=3."""
+    if n_panels == 4:
+        figsize = set_size(columns=2, subplots=(2, 2))
+        fig, axes = plt.subplots(2, 2, figsize=figsize)
+        return fig, axes.flatten()
+    elif n_panels == 3:
+        figsize = set_size(columns=2, subplots=(1, 3))
+        fig, axes = plt.subplots(1, 3, figsize=figsize)
+        return fig, axes.flatten()
+    elif n_panels == 2:
+        figsize = set_size(columns=2, subplots=(1, 2))
+        fig, axes = plt.subplots(1, 2, figsize=figsize)
+        return fig, axes.flatten()
+    else:
+        figsize = set_size(columns=1, subplots=(1, 1))
+        fig, axes = plt.subplots(1, 1, figsize=figsize)
+        return fig, [axes]
 
 
 def _model_legend_handles(models):
@@ -154,12 +168,25 @@ def plot_absolute(data, z_sources, models, quantities, out_dir, show):
 
     if models:
         axes[0].legend(
-            handles=_model_legend_handles(models), loc="lower left", title="Model"
+            handles=_model_legend_handles(models),
+            loc="lower left",
+            title="Model",
+            framealpha=0.9,
+            handlelength=1.2,
+            labelspacing=0.2,
+            borderpad=0.3,
+            fontsize=8.0,
         )
     if len(axes) > 1 and models:
         axes[-1].legend(
             handles=_z_legend_handles(z_sources, z_colors, data, models[0]),
-            loc="lower left", title="Source $z$",
+            loc="lower left",
+            title="Source $z$",
+            framealpha=0.9,
+            handlelength=1.2,
+            labelspacing=0.2,
+            borderpad=0.3,
+            fontsize=8.0,
         )
 
     plt.tight_layout()
@@ -213,12 +240,25 @@ def plot_ratio(data, z_sources, models, quantities, out_dir, show):
         ax.set_title(CELL_RATIO_TITLES[qty])
 
     axes[0].legend(
-        handles=_model_legend_handles(other_models), loc="upper left", title="Model"
+        handles=_model_legend_handles(other_models),
+        loc="upper left",
+        title="Model",
+        framealpha=0.9,
+        handlelength=1.2,
+        labelspacing=0.2,
+        borderpad=0.3,
+        fontsize=8.0,
     )
     if len(axes) > 1:
         axes[-1].legend(
             handles=_z_legend_handles(z_sources, z_colors, data, other_models[0]),
-            loc="upper left", title="Source $z$",
+            loc="upper right",
+            title="Source $z$",
+            framealpha=0.9,
+            handlelength=1.2,
+            labelspacing=0.2,
+            borderpad=0.3,
+            fontsize=8.0,
         )
 
     plt.tight_layout()
@@ -232,7 +272,8 @@ def plot_ratio(data, z_sources, models, quantities, out_dir, show):
 
 def main():
     args = parse_args()
-    apply_style()
+    cols = 1 if len(args.quantities) == 1 else 2
+    apply_style(columns=cols)
 
     base = Path(args.in_dir).expanduser()
     out_dir = Path(args.out_dir)

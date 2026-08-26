@@ -19,7 +19,7 @@ import matplotlib.cm as cm
 import matplotlib.colors as mcolors
 from pathlib import Path
 
-from plot_utils import MODEL_LABELS, MODEL_LS, MODEL_COLORS, apply_style
+from plot_utils import MODEL_LABELS, MODEL_LS, MODEL_COLORS, apply_style, set_size
 
 SURVEYS = ["Euclid", "LSST"]
 EXPERIMENTS = ["Planck", "SO"]
@@ -82,7 +82,7 @@ def load_snr_per_ell(base, model, combo, z_ref, node):
 
 def plot_cumulative_snr(base, models, out_dir, show, node):
     """2×2 grid: one panel per survey×experiment, cumulative SNR vs z_source."""
-    fig, axes = plt.subplots(2, 2, figsize=(9, 7), sharex=True)
+    fig, axes = plt.subplots(2, 2, figsize=set_size(columns=2, subplots=(2, 2)), sharex=True)
     axes_flat = axes.flatten()
 
     handles = []
@@ -119,7 +119,7 @@ def plot_cumulative_snr(base, models, out_dir, show, node):
 
 def plot_snr_per_ell(base, models, z_ref, out_dir, show, node):
     """2×2 grid: per-ell SNR at z_ref for each survey×experiment."""
-    fig, axes = plt.subplots(2, 2, figsize=(9, 7), sharex=True)
+    fig, axes = plt.subplots(2, 2, figsize=set_size(columns=2, subplots=(2, 2)), sharex=True)
     axes_flat = axes.flatten()
 
     handles = []
@@ -161,7 +161,7 @@ def plot_snr_cumulative_vs_ell(base, models, z_ref, out_dir, show, node):
 
         SNR(<ell_max) = sqrt(sum_{ell <= ell_max} SNR_ell^2)
     """
-    fig, axes = plt.subplots(2, 2, figsize=(9, 7), sharex=True, sharey=True)
+    fig, axes = plt.subplots(2, 2, figsize=set_size(columns=2, subplots=(2, 2)), sharex=True, sharey=True)
     axes_flat = axes.flatten()
 
     handles = [
@@ -203,7 +203,7 @@ def plot_snr_per_ell_colorbar(base, models, cmb_exp, out_dir, show, node):
     chosen CMB experiment.  A shared colorbar shows the source redshift.
     """
     n = len(models)
-    fig, axes = plt.subplots(1, n, figsize=(6 * n, 5), sharey=True, squeeze=False)
+    fig, axes = plt.subplots(1, n, figsize=set_size(columns=2, subplots=(1, n)), sharey=True, squeeze=False)
     axes = axes[0]
 
     z_grid = np.round(np.arange(0.5, 3.05, 0.1), 1)
@@ -250,7 +250,7 @@ def plot_snr_per_ell_colorbar(base, models, cmb_exp, out_dir, show, node):
 
 def main():
     args = parse_args()
-    apply_style()
+    apply_style(columns=2)
 
     base = Path(args.in_dir).expanduser()
     out_dir = Path(args.out_dir)
