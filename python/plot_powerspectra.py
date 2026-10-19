@@ -89,8 +89,9 @@ def plot_absolute(data, z_targets, models, out_dir, show):
     """Figure 1: P_m(k) and P_curl(k) for each model at each target redshift."""
     z_colors = redshift_cmap(z_targets)
 
-    fig, axes = plt.subplots(1, 2, figsize=set_size(columns=2, subplots=(1, 2)), sharey=False)
-    ax_m, ax_curl = axes
+    fig_m, ax_m = plt.subplots(1, 1, figsize=set_size(columns=1, subplots=(1, 1)), sharey=False)
+    fig_curl, ax_curl = plt.subplots(1, 1, figsize=set_size(columns=1, subplots=(1, 1)), sharey=False)
+    # ax_m, ax_curl = axes
 
     # Track what goes in the legend
     model_handles, z_handles = [], []
@@ -136,17 +137,20 @@ def plot_absolute(data, z_targets, models, out_dir, show):
     ax_curl.set_title("Curl (momentum) power spectrum")
 
     # Combined legend: models (linestyle) + redshifts (colour)
-    leg1 = ax_m.legend(handles=model_handles, loc="lower left", title="Model")
+    leg1 = ax_m.legend(handles=model_handles, loc="best", title="Model")
     ax_m.add_artist(leg1)
-    ax_curl.legend(handles=z_handles, loc="lower left", title="Redshift")
+    ax_curl.legend(handles=z_handles, loc="best", title="Redshift")
 
     plt.tight_layout()
-    out = Path(out_dir) / "powerspectra_absolute.pdf"
-    fig.savefig(out)
-    print(f"Saved {out}")
+    out_m = Path(out_dir) / "powerspectra_absolute_m.pdf"
+    out_curl = Path(out_dir) / "powerspectra_absolute_curl.pdf"
+    fig_m.savefig(out_m)
+    fig_curl.savefig(out_curl)
+    print(f"Saved {out_m} and {out_curl}")
     if show:
         plt.show()
-    plt.close(fig)
+    plt.close(fig_m)
+    plt.close(fig_curl)
 
 
 def plot_ratio(data, z_targets, models, out_dir, show):
@@ -161,11 +165,13 @@ def plot_ratio(data, z_targets, models, out_dir, show):
         print("Skipping ratio plot — no non-LCDM models selected.")
         return
 
-    fig, axes = plt.subplots(1, 2, figsize=set_size(columns=2, subplots=(1, 2)), sharey=False)
-    ax_m, ax_curl = axes
+    fig_m, ax_m = plt.subplots(1, 1, figsize=set_size(columns=1, subplots=(1, 1)), sharey=False)
+    fig_curl, ax_curl = plt.subplots(1, 1, figsize=set_size(columns=1, subplots=(1, 1)), sharey=False)
+    # ax_m, ax_curl = axes
 
-    for m in axes:
-        m.axhline(1.0, color="0.5", lw=0.8, ls="--")
+
+    ax_m.axhline(1.0, color="0.5", lw=0.8, ls="--")
+    ax_curl.axhline(1.0, color="0.5", lw=0.8, ls="--")
 
     model_handles = []
     z_handles = []
@@ -177,6 +183,17 @@ def plot_ratio(data, z_targets, models, out_dir, show):
         for z_target in z_targets:
             snap = nearest_snapshot(snaps, z_target)
             snap_lcdm = nearest_snapshot(lcdm_snaps, z_target)
+
+            # --- ADD REDSHIFT CHECK HERE ---
+            z_mod = snap["z"]
+            z_lcdm = snap_lcdm["z"]
+            if not np.isclose(z_mod, z_lcdm, rtol=1e-2, atol=1e-3):
+                raise ValueError(
+                    f"Redshift mismatch for target z={z_target}: "
+                    f"{model} has z={z_mod:.4f}, but LCDM has z={z_lcdm:.4f}."
+                )
+            # -------------------------------
+
             color = z_colors[z_target]
             ls = MODEL_LS[model]
 
@@ -227,17 +244,20 @@ def plot_ratio(data, z_targets, models, out_dir, show):
     )
     ax_curl.set_title("Curl power spectrum ratio")
 
-    leg1 = ax_m.legend(handles=model_handles, loc="upper left", title="Model")
+    leg1 = ax_m.legend(handles=model_handles, loc="best", title="Model")
     ax_m.add_artist(leg1)
-    ax_curl.legend(handles=z_handles, loc="upper left", title="Redshift")
+    ax_curl.legend(handles=z_handles, loc="best", title="Redshift")
 
     plt.tight_layout()
-    out = Path(out_dir) / "powerspectra_ratio.pdf"
-    fig.savefig(out)
-    print(f"Saved {out}")
+    out_m = Path(out_dir) / "powerspectra_ratio_m.pdf"
+    out_curl = Path(out_dir) / "powerspectra_ratio_curl.pdf"
+    fig_m.savefig(out_m)
+    fig_curl.savefig(out_curl)
+    print(f"Saved {out_m} and {out_curl}")
     if show:
         plt.show()
-    plt.close(fig)
+    plt.close(fig_m)
+    plt.close(fig_curl)
 
 
 def main():
