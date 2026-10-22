@@ -1,13 +1,13 @@
 PYTHON ?= python
 IN_DIR ?= output
-NODE ?= node_001
+NODE ?= node_037
 MODEL ?= lcdm
 IMG_DIR ?= imgs/$(NODE)/
 VP_PARAMS_FILE ?= output/$(MODEL)/$(NODE)/parameters-usedvalues
 CELL_QUANTITIES ?= Phi B kSZ B_X_kSZ
 
 # Generate node_000 through node_049
-NODES := $(shell printf "node_%03d " $$(seq 1 49))
+NODES := $(shell printf "node_%03d " $$(seq 37 49))
 PLOT_TARGETS := $(addprefix plots-,$(NODES))
 
 .PHONY: test plots-all $(PLOT_TARGETS) plots plot-powerspec plot-cells plot-cells-cross plot-snr plot-snr-cumulative-ell plot-snr-colorbar plot-snr-colorbar-so plot-snr-colorbar-planck

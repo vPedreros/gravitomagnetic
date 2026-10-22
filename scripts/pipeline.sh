@@ -1,7 +1,7 @@
 #!/bin/bash -l
 source /Users/vpedreros/nerding/gravitomagnetic/.venv/bin/activate
 
-for NODE_N in $(seq 1 49); do 
+for NODE_N in 4 13 37; do #$(seq 1 49); do 
     node_fmt=$(printf '%03d' "$NODE_N")
     NODE="node_$node_fmt"
 
